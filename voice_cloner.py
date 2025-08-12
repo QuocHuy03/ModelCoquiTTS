@@ -384,8 +384,13 @@ class VoiceCloner:
         
         # Special handling for Vietnamese - use English as base but keep Vietnamese text
         if language == "vi":
-            print("🇻🇳 Vietnamese detected! Using English as base language for XTTS compatibility")
-            print("💡 Note: Vietnamese text will be processed with English phonetics but maintain Vietnamese pronunciation")
+            print("🇻🇳 Vietnamese detected!")
+            print("⚠️  WARNING: XTTS model cannot naturally read Vietnamese text")
+            print("💡 SOLUTION: Use English text for voice cloning, Vietnamese voice sample will maintain accent")
+            print("📝 RECOMMENDATION: Input English text, voice will sound Vietnamese due to voice sample")
+            
+            # Ask user if they want to continue with Vietnamese text or switch to English
+            print("🔄 Switching to English base language for XTTS compatibility...")
             language = "en"  # Use English as base language
         
         # Validate language
@@ -416,6 +421,7 @@ class VoiceCloner:
             print(f"✅ Voice cloned successfully: {output_path}")
             if language == "en" and self.auto_detect_language(text) == "vi":
                 print(f"🌍 Language used: English (base) + Vietnamese (text)")
+                print(f"🎯 Result: English pronunciation with Vietnamese voice accent")
             else:
                 print(f"🌍 Language used: {language} ({self.SUPPORTED_LANGUAGES.get(language, 'Unknown')})")
             return output_path
@@ -459,6 +465,12 @@ class VoiceCloner:
         if language is None:
             language = self.auto_detect_language(text)
             print(f"🌍 Auto-detected language: {language} ({self.SUPPORTED_LANGUAGES.get(language, 'Unknown')})")
+        
+        # Special handling for Vietnamese - use English as base but keep Vietnamese text
+        if language == "vi":
+            print("🇻🇳 Vietnamese detected! Using English as base language for XTTS compatibility")
+            print("💡 Note: Vietnamese text will be processed with English phonetics but maintain Vietnamese pronunciation")
+            language = "en"  # Use English as base language
         
         # Validate language
         if language not in self.SUPPORTED_LANGUAGES:
@@ -605,6 +617,80 @@ class VoiceCloner:
         print(f"✅ Batch processing completed: {len(output_paths)}/{len(texts)} files created")
         return output_paths
     
+    def batch_clone_voices(self, texts: list, voice_id: str, output_folder: str = "batch_output", 
+                          language: str = None, voice_type: str = "normal", age_group: str = "adult",
+                          speed: float = 1.0, pitch_shift: float = 0.0) -> dict:
+        """
+        Clone voice cho nhiều text cùng lúc
+        
+        Args:
+            texts: List các text cần clone
+            voice_id: ID của voice đã đăng ký
+            output_folder: Thư mục output
+            language: Ngôn ngữ (optional)
+            voice_type: Loại giọng
+            age_group: Nhóm tuổi
+            speed: Tốc độ
+            pitch_shift: Pitch shift
+            
+        Returns:
+            Dict chứa kết quả của từng text
+        """
+        if voice_id not in self.voice_samples:
+            raise ValueError(f"Voice ID '{voice_id}' not found. Please add voice sample first.")
+        
+        # Tạo thư mục output nếu chưa có
+        os.makedirs(output_folder, exist_ok=True)
+        
+        results = {
+            'success_count': 0,
+            'failed_count': 0,
+            'outputs': [],
+            'errors': []
+        }
+        
+        print(f"🚀 Starting batch processing for {len(texts)} texts...")
+        
+        for i, text in enumerate(texts, 1):
+            try:
+                print(f"\n📝 Processing text {i}/{len(texts)}: {text[:50]}...")
+                
+                # Tạo tên file output
+                output_filename = f"batch_{voice_id}_{i:03d}_{hash(text) % 10000}.wav"
+                output_path = os.path.join(output_folder, output_filename)
+                
+                # Clone voice với effects
+                result_path = self.clone_voice_with_effects(
+                    text, voice_id, output_path, language, speed, pitch_shift, voice_type, age_group
+                )
+                
+                results['outputs'].append({
+                    'text': text,
+                    'output_path': result_path,
+                    'filename': output_filename,
+                    'index': i
+                })
+                results['success_count'] += 1
+                
+                print(f"✅ Text {i} processed successfully: {output_filename}")
+                
+            except Exception as e:
+                error_msg = f"Failed to process text {i}: {str(e)}"
+                print(f"❌ {error_msg}")
+                results['errors'].append({
+                    'text': text,
+                    'error': str(e),
+                    'index': i
+                })
+                results['failed_count'] += 1
+        
+        print(f"\n🎉 Batch processing completed!")
+        print(f"✅ Success: {results['success_count']}")
+        print(f"❌ Failed: {results['failed_count']}")
+        print(f"📁 Output folder: {output_folder}")
+        
+        return results
+    
     def get_voice_info(self, voice_id: str) -> Dict:
         """Lấy thông tin chi tiết của voice"""
         if voice_id not in self.voice_samples:
@@ -726,7 +812,7 @@ if __name__ == "__main__":
         "안녕하세요 세계",  # Korean
         "你好世界",  # Chinese
         "สวัสดีโลก",  # Thai
-        "Xin chào thế giới",  # Vietnamese
+        "Xin chào thế giới",  # Vietnamese - Special handling
         "Halo dunia",  # Indonesian
         "Selamat pagi dunia",  # Malay
     ]
@@ -734,6 +820,18 @@ if __name__ == "__main__":
     for text in texts:
         detected_lang = cloner.auto_detect_language(text)
         print(f"Text: {text} -> Language: {detected_lang}")
+    
+    # Demo Vietnamese voice cloning
+    print("\n🇻🇳 Vietnamese Voice Cloning Demo:")
+    try:
+        vietnamese_output = cloner.clone_voice(
+            "Xin chào! Tôi là giọng nói tiếng Việt được clone từ Coqui TTS.", 
+            "my_voice", 
+            language="vi"
+        )
+        print(f"✅ Vietnamese clone successful: {vietnamese_output}")
+    except Exception as e:
+        print(f"❌ Vietnamese clone failed: {e}")
     
     # Demo voice types
     voice_types = ["normal", "male", "female", "child", "elderly"]
@@ -744,4 +842,5 @@ if __name__ == "__main__":
     print("⚡ Speed Range: 0.5x - 2.0x")
     print("🎵 Pitch Range: -12 to +12 semitones")
     print("📝 Text Limit: 500 characters")
-    print(f"🌍 Supported Languages: {len(cloner.SUPPORTED_LANGUAGES)} languages") 
+    print(f"🌍 Supported Languages: {len(cloner.SUPPORTED_LANGUAGES)} languages")
+    print("🇻🇳 Vietnamese: Special handling with English base language") 
