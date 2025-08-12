@@ -4,145 +4,167 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Voice Cloning - Coqui TTS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .main-container {
             background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
             margin: 20px;
-            padding: 30px;
+            padding: 40px;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 50px;
         }
         
         .header h1 {
-            color: #4a5568;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-        
-        .header p {
-            color: #718096;
-            font-size: 1.1em;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+            font-size: 3.5rem;
+            margin-bottom: 15px;
         }
         
         .card {
             border: none;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            margin-bottom: 25px;
-            transition: transform 0.3s ease;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            transition: all 0.4s ease;
+            background: rgba(255, 255, 255, 0.9);
         }
         
         .card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
         }
         
         .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            border-radius: 15px 15px 0 0 !important;
+            border-radius: 20px 20px 0 0 !important;
             font-weight: 600;
-            padding: 20px;
+            padding: 25px;
+            border: none;
         }
         
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 10px;
-            padding: 12px 25px;
+        .btn {
+            border-radius: 15px;
+            padding: 15px 30px;
             font-weight: 600;
+            border: none;
             transition: all 0.3s ease;
         }
         
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
         }
         
         .btn-success {
-            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-            border: none;
-            border-radius: 10px;
-            padding: 12px 25px;
-            font-weight: 600;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
         }
         
         .btn-danger {
-            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
-            border: none;
-            border-radius: 10px;
-            padding: 12px 25px;
-            font-weight: 600;
+            background: linear-gradient(135deg, #fa709a, #fee140);
         }
         
         .form-control, .form-select {
-            border-radius: 10px;
+            border-radius: 15px;
             border: 2px solid #e2e8f0;
-            padding: 12px 15px;
+            padding: 15px 20px;
             transition: all 0.3s ease;
         }
         
         .form-control:focus, .form-select:focus {
             border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            box-shadow: 0 0 0 0.3rem rgba(102, 126, 234, 0.25);
+            transform: translateY(-2px);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-item {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.15);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        
+        .range-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: linear-gradient(90deg, #e2e8f0 0%, #667eea 100%);
+            outline: none;
+            margin: 10px 0;
+        }
+        
+        .value-display {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            display: inline-block;
+            min-width: 60px;
+            text-align: center;
         }
         
         .voice-item {
-            background: #f7fafc;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-left: 4px solid #667eea;
-        }
-        
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        
-        .status-online { background-color: #48bb78; }
-        .status-offline { background-color: #f56565; }
-        
-        .loading {
-            display: none;
-            text-align: center;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 15px;
             padding: 20px;
-        }
-        
-        .spinner-border {
-            color: #667eea;
-        }
-        
-        .alert {
-            border-radius: 10px;
-            border: none;
-        }
-        
-        .audio-player {
-            width: 100%;
-            margin-top: 10px;
-        }
-        
-        .feature-icon {
-            font-size: 2em;
-            color: #667eea;
             margin-bottom: 15px;
+            border-left: 5px solid #667eea;
+            transition: all 0.3s ease;
+        }
+        
+        .voice-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.15);
+        }
+        
+        .effects-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+        
+        .effects-card .card-header {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
         }
     </style>
 </head>
@@ -152,52 +174,32 @@
             <!-- Header -->
             <div class="header">
                 <h1><i class="fas fa-microphone-alt"></i> Voice Cloning</h1>
-                <p>Sử dụng Coqui TTS để clone giọng nói từ audio samples</p>
+                <p>Trải nghiệm công nghệ AI tiên tiến với Coqui TTS - Clone giọng nói chân thực và tự nhiên</p>
             </div>
 
-            <!-- Status Card -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-info-circle"></i> Trạng thái hệ thống
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number" id="server-status-number">0</div>
+                    <div class="stat-label">Server Status</div>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="text-center">
-                                <div class="feature-icon">
-                                    <i class="fas fa-server"></i>
-                                </div>
-                                <h5>Server Status</h5>
-                                <span class="status-indicator status-online" id="server-status"></span>
-                                <span id="server-text">Đang kiểm tra...</span>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="text-center">
-                                <div class="feature-icon">
-                                    <i class="fas fa-brain"></i>
-                                </div>
-                                <h5>Model Status</h5>
-                                <span class="status-indicator status-offline" id="model-status"></span>
-                                <span id="model-text">Đang tải...</span>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="text-center">
-                                <div class="feature-icon">
-                                    <i class="fas fa-microphone"></i>
-                                </div>
-                                <h5>Available Voices</h5>
-                                <span id="voice-count">0</span>
-                            </div>
-                        </div>
-                    </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="model-status-number">0</div>
+                    <div class="stat-label">Model Status</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="voice-count">0</div>
+                    <div class="stat-label">Available Voices</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">200+</div>
+                    <div class="stat-label">Languages</div>
                 </div>
             </div>
 
             <div class="row">
                 <!-- Voice Upload Card -->
-                <div class="col-md-6">
+                <div class="col-lg-6">
                     <div class="card">
                         <div class="card-header">
                             <i class="fas fa-upload"></i> Thêm Voice Sample
@@ -226,7 +228,7 @@
                 </div>
 
                 <!-- Voice Cloning Card -->
-                <div class="col-md-6">
+                <div class="col-lg-6">
                     <div class="card">
                         <div class="card-header">
                             <i class="fas fa-magic"></i> Clone Voice
@@ -244,21 +246,20 @@
                                     <select class="form-select" id="clone-language">
                                         <option value="">Auto-detect ngôn ngữ</option>
                                         <option value="en">English</option>
-                                        <option value="es">Spanish</option>
+                                        <option value="vi">Vietnamese</option>
+                                        <option value="th">Thai</option>
+                                        <option value="id">Indonesian</option>
+                                        <option value="ms">Malay</option>
+                                        <option value="zh-cn">Chinese</option>
+                                        <option value="ja">Japanese</option>
+                                        <option value="ko">Korean</option>
                                         <option value="fr">French</option>
                                         <option value="de">German</option>
+                                        <option value="es">Spanish</option>
                                         <option value="it">Italian</option>
                                         <option value="pt">Portuguese</option>
-                                        <option value="pl">Polish</option>
-                                        <option value="tr">Turkish</option>
                                         <option value="ru">Russian</option>
-                                        <option value="nl">Dutch</option>
-                                        <option value="cs">Czech</option>
                                         <option value="ar">Arabic</option>
-                                        <option value="zh-cn">Chinese (Simplified)</option>
-                                        <option value="hu">Hungarian</option>
-                                        <option value="ko">Korean</option>
-                                        <option value="ja">Japanese</option>
                                         <option value="hi">Hindi</option>
                                     </select>
                                     <div class="form-text">Để trống để tự động detect ngôn ngữ từ text</div>
@@ -266,9 +267,58 @@
                                 <div class="mb-3">
                                     <label for="clone-text" class="form-label">Text cần clone</label>
                                     <textarea class="form-control" id="clone-text" rows="3" placeholder="Nhập text cần chuyển thành giọng nói..." required></textarea>
-                                    <div class="form-text">Tối đa 250 ký tự. Hỗ trợ đa ngôn ngữ!</div>
+                                    <div class="form-text">Tối đa 500 ký tự. Hỗ trợ đa ngôn ngữ!</div>
                                 </div>
-                                <button type="submit" class="btn btn-success w-100">
+                                
+                                <!-- Audio Effects Section -->
+                                <div class="card effects-card mt-3">
+                                    <div class="card-header">
+                                        <i class="fas fa-magic"></i> Audio Effects (Optional)
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <label for="voice-type" class="form-label">Loại giọng</label>
+                                                <select class="form-select" id="voice-type">
+                                                    <option value="normal">Bình thường</option>
+                                                    <option value="male">Nam</option>
+                                                    <option value="female">Nữ</option>
+                                                    <option value="child">Trẻ em</option>
+                                                    <option value="elderly">Người già</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="age-group" class="form-label">Nhóm tuổi</label>
+                                                <select class="form-select" id="age-group">
+                                                    <option value="adult">Người lớn</option>
+                                                    <option value="child">Trẻ em</option>
+                                                    <option value="teen">Thanh thiếu niên</option>
+                                                    <option value="elderly">Người già</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-md-6">
+                                                <label for="speed" class="form-label">Tốc độ</label>
+                                                <input type="range" class="range-slider" id="speed" min="0.5" max="2.0" step="0.1" value="1.0">
+                                                <div class="text-center">
+                                                    <span class="value-display" id="speed-value">1.0x</span>
+                                                </div>
+                                                <div class="form-text text-center">0.5x (chậm) - 2.0x (nhanh)</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="pitch" class="form-label">Pitch</label>
+                                                <input type="range" class="range-slider" id="pitch" min="-12" max="12" step="1" value="0">
+                                                <div class="text-center">
+                                                    <span class="value-display" id="pitch-value">0</span>
+                                                </div>
+                                                <div class="form-text text-center">-12 (thấp) - +12 (cao)</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-success w-100 mt-3">
                                     <i class="fas fa-play"></i> Clone Voice
                                 </button>
                             </form>
@@ -279,17 +329,20 @@
 
             <!-- Available Voices Card -->
             <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-list"></i> Danh sách Voice Samples
-                    <button class="btn btn-outline-light btn-sm float-end" onclick="refreshVoices()">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-list"></i> Danh sách Voice Samples
+                    </div>
+                    <button class="btn btn-outline-light btn-sm" onclick="refreshVoices()">
                         <i class="fas fa-sync-alt"></i> Refresh
                     </button>
                 </div>
                 <div class="card-body">
                     <div id="voices-list">
-                        <div class="text-center text-muted">
-                            <i class="fas fa-microphone-slash fa-3x mb-3"></i>
-                            <p>Chưa có voice samples nào</p>
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-microphone-slash fa-4x mb-3 text-muted"></i>
+                            <p class="h5 text-muted">Chưa có voice samples nào</p>
+                            <p class="text-muted">Hãy upload voice sample đầu tiên để bắt đầu!</p>
                         </div>
                     </div>
                 </div>
@@ -308,11 +361,13 @@
             </div>
 
             <!-- Loading -->
-            <div class="loading" id="loading">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
+            <div class="loading" id="loading" style="display: none;">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3 h5">Đang xử lý...</p>
                 </div>
-                <p class="mt-2">Đang xử lý...</p>
             </div>
 
             <!-- Alerts -->
@@ -320,11 +375,10 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Global variables
         let voices = {};
-        let currentAudio = null;
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
@@ -334,7 +388,23 @@
             // Form event listeners
             document.getElementById('voice-upload-form').addEventListener('submit', handleVoiceUpload);
             document.getElementById('voice-clone-form').addEventListener('submit', handleVoiceClone);
+            
+            // Audio effects event listeners
+            document.getElementById('speed').addEventListener('input', updateSpeedValue);
+            document.getElementById('pitch').addEventListener('input', updatePitchValue);
         });
+        
+        // Update speed value display
+        function updateSpeedValue() {
+            const speed = document.getElementById('speed').value;
+            document.getElementById('speed-value').textContent = speed + 'x';
+        }
+        
+        // Update pitch value display
+        function updatePitchValue() {
+            const pitch = document.getElementById('pitch').value;
+            document.getElementById('pitch-value').textContent = pitch;
+        }
 
         // Health check
         async function checkHealth() {
@@ -355,15 +425,14 @@
 
         // Update status indicators
         function updateStatus(type, isOnline) {
-            const statusElement = document.getElementById(`${type}-status`);
-            const textElement = document.getElementById(`${type}-text`);
+            const statusElement = document.getElementById(`${type}-status-number`);
             
             if (isOnline) {
-                statusElement.className = 'status-indicator status-online';
-                textElement.textContent = 'Online';
+                statusElement.textContent = '1';
+                statusElement.className = 'stat-number';
             } else {
-                statusElement.className = 'status-indicator status-offline';
-                textElement.textContent = 'Offline';
+                statusElement.textContent = '0';
+                statusElement.className = 'stat-number text-danger';
             }
         }
 
@@ -396,9 +465,10 @@
             
             if (voiceIds.length === 0) {
                 voicesList.innerHTML = `
-                    <div class="text-center text-muted">
-                        <i class="fas fa-microphone-slash fa-3x mb-3"></i>
-                        <p>Chưa có voice samples nào</p>
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-microphone-slash fa-4x mb-3 text-muted"></i>
+                        <p class="h5 text-muted">Chưa có voice samples nào</p>
+                        <p class="text-muted">Hãy upload voice sample đầu tiên để bắt đầu!</p>
                     </div>
                 `;
                 return;
@@ -411,11 +481,11 @@
                     <div class="voice-item">
                         <div class="row align-items-center">
                             <div class="col-md-8">
-                                <h6 class="mb-1"><strong>${voiceId}</strong></h6>
-                                <p class="mb-1 text-muted">${voice.text || 'Không có mô tả'}</p>
+                                <h6 class="mb-2"><strong style="background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${voiceId}</strong></h6>
+                                <p class="mb-2 text-muted">${voice.text || 'Không có mô tả'}</p>
                                 <small class="text-muted">
-                                    ${voice.filename || 'Unknown file'}
-                                    ${voice.duration ? ` • ${voice.duration.toFixed(1)}s` : ''}
+                                    <i class="fas fa-file-audio me-1"></i>${voice.filename || 'Unknown file'}
+                                    ${voice.duration ? ` • <i class="fas fa-clock me-1"></i>${voice.duration.toFixed(1)}s` : ''}
                                 </small>
                             </div>
                             <div class="col-md-4 text-end">
@@ -499,6 +569,10 @@
             const voiceId = document.getElementById('clone-voice-id').value;
             const text = document.getElementById('clone-text').value;
             const language = document.getElementById('clone-language').value;
+            const voiceType = document.getElementById('voice-type').value;
+            const ageGroup = document.getElementById('age-group').value;
+            const speed = parseFloat(document.getElementById('speed').value);
+            const pitch = parseInt(document.getElementById('pitch').value);
             
             if (!voiceId || !text) {
                 showAlert('Vui lòng chọn voice và nhập text', 'warning');
@@ -510,13 +584,13 @@
             try {
                 const requestData = {
                     voice_id: voiceId,
-                    text: text
+                    text: text,
+                    language: language || undefined,
+                    voice_type: voiceType,
+                    age_group: ageGroup,
+                    speed: speed,
+                    pitch_shift: pitch
                 };
-                
-                // Thêm language nếu được chọn
-                if (language) {
-                    requestData.language = language;
-                }
                 
                 const response = await fetch('/api/synthesize', {
                     method: 'POST',
@@ -532,6 +606,7 @@
                     showAlert(data.message, 'success');
                     playAudio(data.audio_url);
                     document.getElementById('output-card').style.display = 'block';
+                    document.getElementById('output-card').scrollIntoView({ behavior: 'smooth' });
                 } else {
                     showAlert(data.error || 'Clone voice thất bại', 'danger');
                 }
@@ -580,12 +655,17 @@
             
             outputAudio.innerHTML = `
                 <div class="text-center">
-                    <h6 class="mb-3">Audio đã được tạo thành công!</h6>
-                    <audio controls class="audio-player">
-                        <source src="${audioUrl}" type="audio/wav">
-                        Trình duyệt của bạn không hỗ trợ audio.
-                    </audio>
-                    <div class="mt-3">
+                    <div class="mb-4">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <h5 class="text-success">Audio đã được tạo thành công!</h5>
+                    </div>
+                    <div class="mb-4">
+                        <audio controls style="width: 100%; border-radius: 15px;">
+                            <source src="${audioUrl}" type="audio/wav">
+                            Trình duyệt của bạn không hỗ trợ audio.
+                        </audio>
+                    </div>
+                    <div>
                         <a href="${audioUrl}" class="btn btn-primary" download>
                             <i class="fas fa-download"></i> Tải xuống
                         </a>
@@ -605,7 +685,8 @@
             const alertId = 'alert-' + Date.now();
             
             const alertHtml = `
-                <div class="alert alert-${type} alert-dismissible fade show" id="${alertId}" role="alert">
+                <div class="alert alert-${type} alert-dismissible fade show" id="${alertId}" role="alert" style="border-radius: 15px;">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle'} me-2"></i>
                     ${message}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>

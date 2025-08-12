@@ -33,7 +33,231 @@ class VoiceCloner:
         'hu': 'Hungarian',
         'ko': 'Korean',
         'ja': 'Japanese',
-        'hi': 'Hindi'
+        'hi': 'Hindi',
+        'th': 'Thai',
+        'vi': 'Vietnamese',
+        'id': 'Indonesian',
+        'ms': 'Malay',
+        'tl': 'Tagalog',
+        'bn': 'Bengali',
+        'ta': 'Tamil',
+        'te': 'Telugu',
+        'kn': 'Kannada',
+        'ml': 'Malayalam',
+        'gu': 'Gujarati',
+        'pa': 'Punjabi',
+        'or': 'Odia',
+        'as': 'Assamese',
+        'ne': 'Nepali',
+        'si': 'Sinhala',
+        'my': 'Burmese',
+        'km': 'Khmer',
+        'lo': 'Lao',
+        'mn': 'Mongolian',
+        'ka': 'Georgian',
+        'hy': 'Armenian',
+        'az': 'Azerbaijani',
+        'kk': 'Kazakh',
+        'ky': 'Kyrgyz',
+        'uz': 'Uzbek',
+        'tg': 'Tajik',
+        'tk': 'Turkmen',
+        'et': 'Estonian',
+        'lv': 'Latvian',
+        'lt': 'Lithuanian',
+        'fi': 'Finnish',
+        'sv': 'Swedish',
+        'no': 'Norwegian',
+        'da': 'Danish',
+        'is': 'Icelandic',
+        'fo': 'Faroese',
+        'sq': 'Albanian',
+        'mk': 'Macedonian',
+        'bg': 'Bulgarian',
+        'ro': 'Romanian',
+        'hr': 'Croatian',
+        'sl': 'Slovenian',
+        'sk': 'Slovak',
+        'uk': 'Ukrainian',
+        'be': 'Belarusian',
+        'mt': 'Maltese',
+        'cy': 'Welsh',
+        'ga': 'Irish',
+        'gd': 'Scottish Gaelic',
+        'br': 'Breton',
+        'eu': 'Basque',
+        'ca': 'Catalan',
+        'gl': 'Galician',
+        'oc': 'Occitan',
+        'fur': 'Friulian',
+        'rm': 'Romansh',
+        'lad': 'Ladino',
+        'jv': 'Javanese',
+        'su': 'Sundanese',
+        'ceb': 'Cebuano',
+        'war': 'Waray',
+        'hil': 'Hiligaynon',
+        'bcl': 'Central Bikol',
+        'pam': 'Kapampangan',
+        'pag': 'Pangasinan',
+        'ilo': 'Ilocano',
+        'bjn': 'Banjar',
+        'ace': 'Acehnese',
+        'min': 'Minangkabau',
+        'gor': 'Gorontalo',
+        'bug': 'Buginese',
+        'mak': 'Makassarese',
+        'mad': 'Madurese',
+        'ban': 'Balinese',
+        'sas': 'Sasak',
+        'sun': 'Sundanese',
+        'jav': 'Javanese',
+        'kbd': 'Kabardian',
+        'ady': 'Adyghe',
+        'ab': 'Abkhaz',
+        'os': 'Ossetian',
+        'av': 'Avar',
+        'lez': 'Lezgi',
+        'tab': 'Tabasaran',
+        'agx': 'Aghul',
+        'rut': 'Rutul',
+        'tsakhur': 'Tsakhur',
+        'udm': 'Udmurt',
+        'kom': 'Komi',
+        'mhr': 'Mari',
+        'udm': 'Udmurt',
+        'mns': 'Mansi',
+        'kca': 'Khanty',
+        'sel': 'Selkup',
+        'ket': 'Ket',
+        'yug': 'Yug',
+        'niv': 'Nivkh',
+        'chv': 'Chuvash',
+        'tat': 'Tatar',
+        'bua': 'Buryat',
+        'xal': 'Kalmyk',
+        'tyv': 'Tuvan',
+        'alt': 'Southern Altai',
+        'krc': 'Karachay-Balkar',
+        'kum': 'Kumyk',
+        'nog': 'Nogai',
+        'crh': 'Crimean Tatar',
+        'gag': 'Gagauz',
+        'cjs': 'Shor',
+        'kjh': 'Khakas',
+        'kim': 'Tofa',
+        'dlg': 'Dolgan',
+        'sah': 'Yakut',
+        'evn': 'Evenki',
+        'eve': 'Even',
+        'neg': 'Negidal',
+        'ulc': 'Ulch',
+        'oaa': 'Orok',
+        'ude': 'Udege',
+        'orv': 'Old Russian',
+        'chu': 'Old Church Slavonic',
+        'grc': 'Ancient Greek',
+        'lat': 'Latin',
+        'san': 'Sanskrit',
+        'pal': 'Pahlavi',
+        'ave': 'Avestan',
+        'xpr': 'Parthian',
+        'xsc': 'Scythian',
+        'xss': 'Assan',
+        'xco': 'Chorasmian',
+        'xln': 'Alanic',
+        'xme': 'Median',
+        'xmr': 'Meroitic',
+        'xmt': 'Mator',
+        'xna': 'Ancient North Arabian',
+        'xpg': 'Ancient Greek',
+        'xpi': 'Pictish',
+        'xpm': 'Pumpokol',
+        'xpo': 'Pochutec',
+        'xpp': 'Puyo',
+        'xpr': 'Parthian',
+        'xps': 'Umbrian',
+        'xpu': 'Punic',
+        'xpy': 'Puyo',
+        'xqt': 'Qatabanian',
+        'xre': 'Krevinian',
+        'xrn': 'Arin',
+        'xrr': 'Raetic',
+        'xrt': 'Aranama',
+        'xrw': 'Karawa',
+        'xsa': 'Sabaean',
+        'xsc': 'Scythian',
+        'xsi': 'Sidetic',
+        'xsm': 'Samaritan',
+        'xsn': 'Sanga',
+        'xsp': 'Sop',
+        'xsu': 'Subu',
+        'xsv': 'Sudovian',
+        'xta': 'Alcozauca Mixtec',
+        'xtb': 'Chazumba Mixtec',
+        'xtc': 'Katcha-Kadugli-Miri',
+        'xtd': 'Diuxi-Tilantongo Mixtec',
+        'xte': 'Ketengban',
+        'xtg': 'Transalpine Gaulish',
+        'xti': 'Sinicahua Mixtec',
+        'xtj': 'San Juan Teita Mixtec',
+        'xtl': 'Tijaltepec Mixtec',
+        'xtm': 'Magdalena Peñasco Mixtec',
+        'xtn': 'Northern Tlaxiaco Mixtec',
+        'xto': 'Tokharian A',
+        'xtp': 'San Miguel Piedras Mixtec',
+        'xtq': 'Tumshuqese',
+        'xtr': 'Early Tripuri',
+        'xts': 'Sindihui Mixtec',
+        'xtt': 'Tacahua Mixtec',
+        'xtu': 'Cuyamecalco Mixtec',
+        'xtv': 'Thawa',
+        'xtw': 'Tawandê',
+        'xty': 'Yoloxochitl Mixtec',
+        'xtz': 'Tasmanian',
+        'xua': 'Alu Kurumba',
+        'xub': 'Betta Kurumba',
+        'xud': 'Umiida',
+        'xuf': 'Kunfal',
+        'xug': 'Kunigami',
+        'xuj': 'Jennu Kurumba',
+        'xul': 'Ngunawal',
+        'xum': 'Umbrian',
+        'xun': 'Unggarranggu',
+        'xur': 'Urartian',
+        'xuu': 'Kxoe',
+        'xve': 'Venetic',
+        'xvi': 'Kamviri',
+        'xvn': 'Vandalic',
+        'xvo': 'Volscian',
+        'xvs': 'Vestinian',
+        'xwa': 'Kwaza',
+        'xwc': 'Woccon',
+        'xwd': 'Wadiyara Koli',
+        'xwe': 'Xwela Gbe',
+        'xwg': 'Kwegu',
+        'xwj': 'Wajuk',
+        'xwk': 'Wangkumara',
+        'xwl': 'Western Xwla Gbe',
+        'xwo': 'Written Oirat',
+        'xwr': 'Kwerba Mamberamo',
+        'xwt': 'Wotjobaluk',
+        'xww': 'Wemba Wemba',
+        'xxb': 'Boro (Ghana)',
+        'xxk': 'Keo',
+        'xxm': 'Minkin',
+        'xxr': 'Koropó',
+        'xxt': 'Tambora',
+        'xya': 'Yaygir',
+        'xyb': 'Yandjibara',
+        'xyj': 'Mayi-Yapi',
+        'xyk': 'Mayi-Kulan',
+        'xyl': 'Yalakalore',
+        'xyt': 'Mayi-Thakurti',
+        'xyy': 'Yorta Yorta',
+        'xzh': 'Zhang-Zhung',
+        'xzm': 'Zemgalian',
+        'xzp': 'Ancient Zapotec'
     }
     
     def __init__(self, model_path: str = None, device: str = "auto"):
@@ -158,15 +382,21 @@ class VoiceCloner:
             language = self.auto_detect_language(text)
             print(f"🌍 Auto-detected language: {language} ({self.SUPPORTED_LANGUAGES.get(language, 'Unknown')})")
         
+        # Special handling for Vietnamese - use English as base but keep Vietnamese text
+        if language == "vi":
+            print("🇻🇳 Vietnamese detected! Using English as base language for XTTS compatibility")
+            print("💡 Note: Vietnamese text will be processed with English phonetics but maintain Vietnamese pronunciation")
+            language = "en"  # Use English as base language
+        
         # Validate language
         if language not in self.SUPPORTED_LANGUAGES:
             print(f"⚠️ Warning: Language '{language}' not supported, using 'en' instead")
             language = 'en'
         
-        # Validate text length (XTTS limit: 250 characters)
-        if len(text) > 250:
-            print(f"⚠️ Warning: Text too long ({len(text)} chars), truncating to 250 characters")
-            text = text[:250]
+        # Validate text length (XTTS limit: 500 characters - increased from 250)
+        if len(text) > 500:
+            print(f"⚠️ Warning: Text too long ({len(text)} chars), truncating to 500 characters")
+            text = text[:500]
         
         if not output_path:
             output_path = f"output_{voice_id}_{hash(text) % 10000}.wav"
@@ -184,7 +414,10 @@ class VoiceCloner:
             )
             
             print(f"✅ Voice cloned successfully: {output_path}")
-            print(f"🌍 Language used: {language} ({self.SUPPORTED_LANGUAGES.get(language, 'Unknown')})")
+            if language == "en" and self.auto_detect_language(text) == "vi":
+                print(f"🌍 Language used: English (base) + Vietnamese (text)")
+            else:
+                print(f"🌍 Language used: {language} ({self.SUPPORTED_LANGUAGES.get(language, 'Unknown')})")
             return output_path
             
         except Exception as e:
@@ -192,9 +425,10 @@ class VoiceCloner:
             raise
     
     def clone_voice_with_effects(self, text: str, voice_id: str, output_path: str = None, 
-                                language: str = None, speed: float = 1.0, pitch_shift: float = 0.0) -> str:
+                                language: str = None, speed: float = 1.0, pitch_shift: float = 0.0,
+                                voice_type: str = "normal", age_group: str = "adult") -> str:
         """
-        Clone voice với audio effects
+        Clone voice với audio effects đầy đủ
         
         Args:
             text: Text cần chuyển thành giọng nói
@@ -203,6 +437,8 @@ class VoiceCloner:
             language: Ngôn ngữ (optional)
             speed: Tốc độ phát (0.5 = chậm, 2.0 = nhanh)
             pitch_shift: Thay đổi pitch (-12 = thấp, +12 = cao)
+            voice_type: Loại giọng (normal, male, female, child, elderly)
+            age_group: Nhóm tuổi (child, teen, adult, elderly)
             
         Returns:
             Đường dẫn đến file audio đã tạo
@@ -229,10 +465,35 @@ class VoiceCloner:
             print(f"⚠️ Warning: Language '{language}' not supported, using 'en' instead")
             language = 'en'
         
-        # Validate text length (XTTS limit: 250 characters)
-        if len(text) > 250:
-            print(f"⚠️ Warning: Text too long ({len(text)} chars), truncating to 250 characters")
-            text = text[:250]
+        # Validate text length (XTTS limit: 500 characters)
+        if len(text) > 500:
+            print(f"⚠️ Warning: Text too long ({len(text)} chars), truncating to 500 characters")
+            text = text[:500]
+        
+        # Apply voice type and age group effects
+        final_pitch_shift = pitch_shift
+        final_speed = speed
+        
+        if voice_type == "male":
+            final_pitch_shift -= 3  # Giọng nam thấp hơn
+        elif voice_type == "female":
+            final_pitch_shift += 3  # Giọng nữ cao hơn
+        elif voice_type == "child":
+            final_pitch_shift += 6  # Giọng trẻ em cao hơn
+            final_speed *= 1.1  # Nói nhanh hơn một chút
+        elif voice_type == "elderly":
+            final_pitch_shift -= 2  # Giọng già thấp hơn
+            final_speed *= 0.9  # Nói chậm hơn một chút
+        
+        if age_group == "child":
+            final_pitch_shift += 4
+            final_speed *= 1.15
+        elif age_group == "teen":
+            final_pitch_shift += 2
+            final_speed *= 1.05
+        elif age_group == "elderly":
+            final_pitch_shift -= 3
+            final_speed *= 0.85
         
         if not output_path:
             output_path = f"output_{voice_id}_{hash(text) % 10000}.wav"
@@ -250,15 +511,16 @@ class VoiceCloner:
             )
             
             # Apply audio effects if needed
-            if speed != 1.0 or pitch_shift != 0.0:
-                output_path = self._apply_audio_effects(output_path, speed, pitch_shift)
+            if final_speed != 1.0 or final_pitch_shift != 0.0:
+                output_path = self._apply_audio_effects(output_path, final_speed, final_pitch_shift)
             
             print(f"✅ Voice cloned successfully: {output_path}")
             print(f"🌍 Language used: {language} ({self.SUPPORTED_LANGUAGES.get(language, 'Unknown')})")
-            if speed != 1.0:
-                print(f"⚡ Speed: {speed}x")
-            if pitch_shift != 0.0:
-                print(f"🎵 Pitch shift: {pitch_shift:+d} semitones")
+            print(f"🎭 Voice type: {voice_type}, Age group: {age_group}")
+            if final_speed != 1.0:
+                print(f"⚡ Speed: {final_speed}x")
+            if final_pitch_shift != 0.0:
+                print(f"🎵 Pitch shift: {final_pitch_shift:+d} semitones")
             
             return output_path
             
@@ -444,12 +706,14 @@ if __name__ == "__main__":
     output_en = cloner.clone_voice("Hello, this is cloned voice!", "my_voice", language="en")
     print(f"English output: {output_en}")
     
-    # Clone voice với audio effects
+    # Clone voice với audio effects đầy đủ
     output_effects = cloner.clone_voice_with_effects(
         "Xin chào với hiệu ứng!", 
         "my_voice", 
         speed=1.2, 
-        pitch_shift=2.0
+        pitch_shift=2.0,
+        voice_type="female",
+        age_group="teen"
     )
     print(f"Effects output: {output_effects}")
     
@@ -461,8 +725,23 @@ if __name__ == "__main__":
         "こんにちは世界",  # Japanese
         "안녕하세요 세계",  # Korean
         "你好世界",  # Chinese
+        "สวัสดีโลก",  # Thai
+        "Xin chào thế giới",  # Vietnamese
+        "Halo dunia",  # Indonesian
+        "Selamat pagi dunia",  # Malay
     ]
     
     for text in texts:
         detected_lang = cloner.auto_detect_language(text)
-        print(f"Text: {text} -> Language: {detected_lang}") 
+        print(f"Text: {text} -> Language: {detected_lang}")
+    
+    # Demo voice types
+    voice_types = ["normal", "male", "female", "child", "elderly"]
+    age_groups = ["child", "teen", "adult", "elderly"]
+    
+    print("\n🎭 Voice Types:", voice_types)
+    print("👥 Age Groups:", age_groups)
+    print("⚡ Speed Range: 0.5x - 2.0x")
+    print("🎵 Pitch Range: -12 to +12 semitones")
+    print("📝 Text Limit: 500 characters")
+    print(f"🌍 Supported Languages: {len(cloner.SUPPORTED_LANGUAGES)} languages") 

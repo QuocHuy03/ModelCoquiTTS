@@ -148,6 +148,10 @@ def synthesize():
         text = data.get('text', '').strip()
         voice_id = data.get('voice_id', '').strip()
         language = data.get('language', '').strip()  # Optional language parameter
+        voice_type = data.get('voice_type', 'normal')  # Voice type effects
+        age_group = data.get('age_group', 'adult')  # Age group effects
+        speed = data.get('speed', 1.0)  # Speed effect
+        pitch_shift = data.get('pitch_shift', 0)  # Pitch effect
         
         if not text:
             return jsonify({'error': 'Text is required'}), 400
@@ -163,11 +167,21 @@ def synthesize():
         output_filename = f"output_{voice_id}_{uuid.uuid4().hex[:8]}.wav"
         output_path = os.path.join(OUTPUT_FOLDER, output_filename)
         
-        # Clone voice với language tùy chọn
-        if language:
-            result_path = voice_cloner.clone_voice(text, voice_id, output_path, language)
+        # Clone voice với audio effects
+        if any([voice_type != 'normal', age_group != 'adult', speed != 1.0, pitch_shift != 0]):
+            # Sử dụng method với effects
+            result_path = voice_cloner.clone_voice_with_effects(
+                text, voice_id, output_path, 
+                language=language if language else None,
+                speed=speed, pitch_shift=pitch_shift,
+                voice_type=voice_type, age_group=age_group
+            )
         else:
-            result_path = voice_cloner.clone_voice(text, voice_id, output_path)
+            # Sử dụng method cơ bản
+            if language:
+                result_path = voice_cloner.clone_voice(text, voice_id, output_path, language)
+            else:
+                result_path = voice_cloner.clone_voice(text, voice_id, output_path)
         
         if os.path.exists(result_path):
             return jsonify({
