@@ -540,6 +540,144 @@ class VoiceCloner:
             print(f"❌ Error cloning voice: {e}")
             raise
     
+    def clone_voice_with_advanced_effects(self, text: str, voice_id: str, output_path: str = None,
+                                         language: str = None, speed: float = 1.0, pitch_shift: float = 0.0,
+                                         voice_type: str = "normal", age_group: str = "adult",
+                                         reverb: float = 0.0, echo: float = 0.0, noise_reduction: bool = False,
+                                         normalize: bool = True) -> str:
+        """
+        Clone voice với advanced audio effects
+        
+        Args:
+            text: Text cần chuyển thành giọng nói
+            voice_id: ID của voice đã đăng ký
+            output_path: Đường dẫn output (optional)
+            language: Ngôn ngữ (optional)
+            speed: Tốc độ phát
+            pitch_shift: Thay đổi pitch
+            voice_type: Loại giọng
+            age_group: Nhóm tuổi
+            reverb: Mức độ reverb (0.0 - 1.0)
+            echo: Mức độ echo (0.0 - 1.0)
+            noise_reduction: Có giảm noise không
+            normalize: Có normalize audio không
+            
+        Returns:
+            Đường dẫn đến file audio đã tạo
+        """
+        if voice_id not in self.voice_samples:
+            raise ValueError(f"Voice ID '{voice_id}' not found. Please add voice sample first.")
+        
+        # Validate parameters
+        if speed < 0.5 or speed > 2.0:
+            print(f"⚠️ Warning: Speed {speed} out of range [0.5, 2.0], using 1.0")
+            speed = 1.0
+        
+        if pitch_shift < -12 or pitch_shift > 12:
+            print(f"⚠️ Warning: Pitch shift {pitch_shift} out of range [-12, 12], using 0.0")
+            pitch_shift = 0.0
+        
+        if reverb < 0.0 or reverb > 1.0:
+            print(f"⚠️ Warning: Reverb {reverb} out of range [0.0, 1.0], using 0.0")
+            reverb = 0.0
+        
+        if echo < 0.0 or echo > 1.0:
+            print(f"⚠️ Warning: Echo {echo} out of range [0.0, 1.0], using 0.0")
+            echo = 0.0
+        
+        # Auto-detect language if not specified
+        if language is None:
+            language = self.auto_detect_language(text)
+            print(f"🌍 Auto-detected language: {language} ({self.SUPPORTED_LANGUAGES.get(language, 'Unknown')})")
+        
+        # Special handling for Vietnamese
+        if language == "vi":
+            print("🇻🇳 Vietnamese detected!")
+            print("⚠️  WARNING: XTTS model cannot naturally read Vietnamese text")
+            print("💡 SOLUTION: Use English text for voice cloning, Vietnamese voice sample will maintain accent")
+            print("📝 RECOMMENDATION: Input English text, voice will sound Vietnamese due to voice sample")
+            print("🔄 Switching to English base language for XTTS compatibility...")
+            language = "en"
+        
+        # Validate language
+        if language not in self.SUPPORTED_LANGUAGES:
+            print(f"⚠️ Warning: Language '{language}' not supported, using 'en' instead")
+            language = 'en'
+        
+        # Validate text length
+        if len(text) > 500:
+            print(f"⚠️ Warning: Text too long ({len(text)} chars), truncating to 500 characters")
+            text = text[:500]
+        
+        # Apply voice type and age group effects
+        final_pitch_shift = pitch_shift
+        final_speed = speed
+        
+        if voice_type == "male":
+            final_pitch_shift -= 3
+        elif voice_type == "female":
+            final_pitch_shift += 3
+        elif voice_type == "child":
+            final_pitch_shift += 6
+            final_speed *= 1.1
+        elif voice_type == "elderly":
+            final_pitch_shift -= 2
+            final_speed *= 0.9
+        
+        if age_group == "child":
+            final_pitch_shift += 4
+            final_speed *= 1.15
+        elif age_group == "teen":
+            final_pitch_shift += 2
+            final_speed *= 1.05
+        elif age_group == "elderly":
+            final_pitch_shift -= 3
+            final_speed *= 0.85
+        
+        if not output_path:
+            output_path = f"advanced_{voice_id}_{hash(text) % 10000}.wav"
+        
+        try:
+            # Sử dụng XTTS để clone voice
+            audio_path = self.voice_samples[voice_id]['audio_path']
+            
+            # Tạo audio với voice cloning
+            self.model.tts_to_file(
+                text=text,
+                speaker_wav=audio_path,
+                language=language,
+                file_path=output_path
+            )
+            
+            # Apply advanced audio effects
+            if any([final_speed != 1.0, final_pitch_shift != 0.0, reverb > 0.0, echo > 0.0, noise_reduction, normalize]):
+                output_path = self._apply_advanced_audio_effects(
+                    output_path, final_speed, final_pitch_shift, 
+                    reverb, echo, noise_reduction, normalize
+                )
+            
+            print(f"✅ Voice cloned successfully with advanced effects: {output_path}")
+            print(f"🌍 Language used: {language} ({self.SUPPORTED_LANGUAGES.get(language, 'Unknown')})")
+            print(f"🎭 Voice type: {voice_type}, Age group: {age_group}")
+            if final_speed != 1.0:
+                print(f"⚡ Speed: {final_speed}x")
+            if final_pitch_shift != 0.0:
+                print(f"🎵 Pitch shift: {final_pitch_shift:+d} semitones")
+            if reverb > 0.0:
+                print(f"🏛️ Reverb: {reverb:.2f}")
+            if echo > 0.0:
+                print(f"🔊 Echo: {echo:.2f}")
+            if noise_reduction:
+                print(f"🔇 Noise reduction: Enabled")
+            if normalize:
+                print(f"📊 Normalize: Enabled")
+            
+            return output_path
+            
+        except Exception as e:
+            print(f"❌ Error cloning voice: {e}")
+            raise
+    
     def _apply_audio_effects(self, audio_path: str, speed: float, pitch_shift: float) -> str:
         """
         Apply audio effects (speed, pitch) to audio file
@@ -576,6 +714,85 @@ class VoiceCloner:
             
         except Exception as e:
             print(f"⚠️ Warning: Could not apply audio effects: {e}")
+            return audio_path
+    
+    def _apply_advanced_audio_effects(self, audio_path: str, speed: float, pitch_shift: float,
+                                     reverb: float, echo: float, noise_reduction: bool, normalize: bool) -> str:
+        """
+        Apply advanced audio effects
+        
+        Args:
+            audio_path: Đường dẫn file audio
+            speed: Tốc độ phát
+            pitch_shift: Thay đổi pitch
+            reverb: Mức độ reverb
+            echo: Mức độ echo
+            noise_reduction: Có giảm noise không
+            normalize: Có normalize audio không
+            
+        Returns:
+            Đường dẫn file audio đã được xử lý
+        """
+        try:
+            import librosa
+            import soundfile as sf
+            import numpy as np
+            
+            # Load audio
+            audio, sr = librosa.load(audio_path, sr=None)
+            
+            # Apply basic effects
+            if speed != 1.0:
+                audio = librosa.effects.time_stretch(audio, rate=speed)
+            
+            if pitch_shift != 0.0:
+                audio = librosa.effects.pitch_shift(audio, sr=sr, n_steps=pitch_shift)
+            
+            # Apply advanced effects
+            if reverb > 0.0:
+                # Simple reverb effect
+                reverb_samples = int(sr * reverb * 0.1)  # 0.1 second reverb
+                reverb_audio = np.zeros_like(audio)
+                reverb_audio[reverb_samples:] = audio[:-reverb_samples] * reverb
+                audio = audio + reverb_audio
+            
+            if echo > 0.0:
+                # Simple echo effect
+                echo_delay = int(sr * echo * 0.3)  # 0.3 second echo
+                echo_audio = np.zeros_like(audio)
+                echo_audio[echo_delay:] = audio[:-echo_delay] * echo
+                audio = audio + echo_audio
+            
+            if noise_reduction:
+                # Simple noise reduction (spectral gating)
+                D = librosa.stft(audio)
+                D_mag, D_phase = librosa.magphase(D)
+                D_mag_filtered = D_mag * (D_mag > np.percentile(D_mag, 20))
+                audio = librosa.istft(D_mag_filtered * D_phase)
+            
+            if normalize:
+                # Normalize audio
+                audio = librosa.util.normalize(audio)
+            
+            # Save processed audio
+            effects_str = f"_s{speed}_p{pitch_shift}"
+            if reverb > 0.0:
+                effects_str += f"_r{reverb:.2f}"
+            if echo > 0.0:
+                effects_str += f"_e{echo:.2f}"
+            if noise_reduction:
+                effects_str += "_nr"
+            if normalize:
+                effects_str += "_n"
+            
+            output_path = audio_path.replace('.wav', f'_advanced{effects_str}.wav')
+            sf.write(output_path, audio, sr)
+            
+            print(f"🎵 Applied advanced audio effects: {effects_str}")
+            return output_path
+            
+        except Exception as e:
+            print(f"⚠️ Warning: Could not apply advanced audio effects: {e}")
             return audio_path
     
     def get_available_voices(self) -> List[str]:
@@ -738,6 +955,380 @@ class VoiceCloner:
         self.voice_samples = config.get('voices', {})
         print(f"✅ Voice configuration imported: {len(self.voice_samples)} voices loaded")
 
+    def get_voice_analytics(self) -> dict:
+        """
+        Lấy thống kê và phân tích về tất cả voices
+        
+        Returns:
+            Dict chứa thống kê chi tiết
+        """
+        if not self.voice_samples:
+            return {"error": "No voices available"}
+        
+        analytics = {
+            'total_voices': len(self.voice_samples),
+            'total_duration': 0,
+            'total_size': 0,
+            'voice_types': {},
+            'languages': {},
+            'file_formats': {},
+            'quality_metrics': {},
+            'recent_voices': [],
+            'popular_voices': []
+        }
+        
+        # Phân tích từng voice
+        for voice_id, voice_info in self.voice_samples.items():
+            # Tổng thời gian và kích thước
+            duration = voice_info.get('duration', 0)
+            analytics['total_duration'] += duration
+            
+            # Kích thước file
+            if 'audio_path' in voice_info and os.path.exists(voice_info['audio_path']):
+                file_size = os.path.getsize(voice_info['audio_path'])
+                analytics['total_size'] += file_size
+                
+                # Phân tích format file
+                file_ext = os.path.splitext(voice_info['audio_path'])[1].lower()
+                analytics['file_formats'][file_ext] = analytics['file_formats'].get(file_ext, 0) + 1
+            
+            # Phân tích loại giọng (dựa trên text mô tả)
+            text = voice_info.get('text', '').lower()
+            if any(word in text for word in ['nam', 'male', 'ông', 'anh']):
+                voice_type = 'male'
+            elif any(word in text for word in ['nữ', 'female', 'bà', 'chị']):
+                voice_type = 'female'
+            elif any(word in text for word in ['trẻ', 'child', 'em', 'bé']):
+                voice_type = 'child'
+            elif any(word in text for word in ['già', 'elderly', 'cụ', 'ông già']):
+                voice_type = 'elderly'
+            else:
+                voice_type = 'unknown'
+            
+            analytics['voice_types'][voice_type] = analytics['voice_types'].get(voice_type, 0) + 1
+            
+            # Phân tích ngôn ngữ
+            detected_lang = self.auto_detect_language(text) if text else 'unknown'
+            analytics['languages'][detected_lang] = analytics['languages'].get(detected_lang, 0) + 1
+        
+        # Tính toán metrics
+        if analytics['total_voices'] > 0:
+            analytics['quality_metrics'] = {
+                'average_duration': analytics['total_duration'] / analytics['total_voices'],
+                'average_size': analytics['total_size'] / analytics['total_voices'],
+                'total_size_mb': round(analytics['total_size'] / (1024 * 1024), 2)
+            }
+        
+        # Sắp xếp theo popularity (dựa trên duration)
+        sorted_voices = sorted(self.voice_samples.items(), 
+                              key=lambda x: x[1].get('duration', 0), reverse=True)
+        analytics['popular_voices'] = [voice_id for voice_id, _ in sorted_voices[:5]]
+        
+        return analytics
+
+    def assess_voice_quality(self, voice_id: str) -> dict:
+        """
+        Đánh giá chất lượng của voice sample
+        
+        Args:
+            voice_id: ID của voice cần đánh giá
+            
+        Returns:
+            Dict chứa các metrics chất lượng
+        """
+        if voice_id not in self.voice_samples:
+            raise ValueError(f"Voice ID '{voice_id}' not found. Please add voice sample first.")
+        
+        try:
+            import librosa
+            import numpy as np
+            
+            voice_info = self.voice_samples[voice_id]
+            audio_path = voice_info['audio_path']
+            
+            if not os.path.exists(audio_path):
+                return {"error": "Audio file not found"}
+            
+            # Load audio
+            audio, sr = librosa.load(audio_path, sr=None)
+            
+            # Tính toán các metrics chất lượng
+            quality_metrics = {
+                'voice_id': voice_id,
+                'sample_rate': sr,
+                'duration': len(audio) / sr,
+                'total_samples': len(audio),
+                'audio_metrics': {},
+                'spectral_metrics': {},
+                'noise_metrics': {},
+                'overall_score': 0.0
+            }
+            
+            # Audio metrics
+            quality_metrics['audio_metrics'] = {
+                'rms_energy': float(np.sqrt(np.mean(audio**2))),
+                'peak_amplitude': float(np.max(np.abs(audio))),
+                'dynamic_range': float(np.max(audio) - np.min(audio)),
+                'zero_crossing_rate': float(librosa.feature.zero_crossing_rate(audio).mean())
+            }
+            
+            # Spectral metrics
+            spectral_centroids = librosa.feature.spectral_centroid(y=audio, sr=sr)
+            spectral_rolloff = librosa.feature.spectral_rolloff(y=audio, sr=sr)
+            spectral_bandwidth = librosa.feature.spectral_bandwidth(y=audio, sr=sr)
+            
+            quality_metrics['spectral_metrics'] = {
+                'spectral_centroid_mean': float(spectral_centroids.mean()),
+                'spectral_rolloff_mean': float(spectral_rolloff.mean()),
+                'spectral_bandwidth_mean': float(spectral_bandwidth.mean()),
+                'spectral_flatness': float(librosa.feature.spectral_flatness(y=audio).mean())
+            }
+            
+            # Noise metrics
+            mfccs = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=13)
+            quality_metrics['noise_metrics'] = {
+                'mfcc_variance': float(np.var(mfccs)),
+                'signal_to_noise_ratio': float(10 * np.log10(np.mean(audio**2) / np.var(audio))),
+                'harmonic_to_noise_ratio': float(librosa.effects.harmonic(audio).shape[0] / len(audio))
+            }
+            
+            # Tính overall score (0-100)
+            score = 0.0
+            
+            # Duration score (optimal: 3-10 seconds)
+            duration = quality_metrics['duration']
+            if 3 <= duration <= 10:
+                score += 25
+            elif 1 <= duration <= 15:
+                score += 20
+            else:
+                score += 10
+            
+            # Sample rate score (optimal: >= 22050)
+            if sr >= 44100:
+                score += 25
+            elif sr >= 22050:
+                score += 20
+            else:
+                score += 10
+            
+            # Energy score
+            rms_energy = quality_metrics['audio_metrics']['rms_energy']
+            if 0.01 <= rms_energy <= 0.5:
+                score += 25
+            else:
+                score += 15
+            
+            # Spectral score
+            spectral_centroid = quality_metrics['spectral_metrics']['spectral_centroid_mean']
+            if 1000 <= spectral_centroid <= 4000:
+                score += 25
+            else:
+                score += 15
+            
+            quality_metrics['overall_score'] = min(100.0, score)
+            
+            # Quality level
+            if quality_metrics['overall_score'] >= 80:
+                quality_level = "Excellent"
+            elif quality_metrics['overall_score'] >= 60:
+                quality_level = "Good"
+            elif quality_metrics['overall_score'] >= 40:
+                quality_level = "Fair"
+            else:
+                quality_level = "Poor"
+            
+            quality_metrics['quality_level'] = quality_level
+            
+            print(f"🔍 Voice quality assessment for {voice_id}:")
+            print(f"📊 Overall Score: {quality_metrics['overall_score']:.1f}/100 ({quality_level})")
+            print(f"⏱️ Duration: {quality_metrics['duration']:.2f}s")
+            print(f"🎵 Sample Rate: {sr} Hz")
+            print(f"⚡ RMS Energy: {quality_metrics['audio_metrics']['rms_energy']:.4f}")
+            
+            return quality_metrics
+            
+        except Exception as e:
+            print(f"❌ Error assessing voice quality: {e}")
+            return {"error": str(e)}
+
+    def transform_voice(self, voice_id: str, transformation_type: str, 
+                       intensity: float = 0.5, output_path: str = None) -> str:
+        """
+        Biến đổi voice sample với các hiệu ứng đặc biệt
+        
+        Args:
+            voice_id: ID của voice cần biến đổi
+            transformation_type: Loại biến đổi
+            intensity: Cường độ biến đổi (0.0 - 1.0)
+            output_path: Đường dẫn output (optional)
+            
+        Returns:
+            Đường dẫn đến file audio đã biến đổi
+        """
+        if voice_id not in self.voice_samples:
+            raise ValueError(f"Voice ID '{voice_id}' not found. Please add voice sample first.")
+        
+        # Validate transformation type
+        valid_transformations = {
+            'robot': 'Robot voice effect',
+            'alien': 'Alien voice effect', 
+            'monster': 'Monster voice effect',
+            'chipmunk': 'Chipmunk voice effect',
+            'giant': 'Giant voice effect',
+            'whisper': 'Whisper voice effect',
+            'radio': 'Radio/telephone effect',
+            'underwater': 'Underwater effect',
+            'space': 'Space/echo effect',
+            'time_warp': 'Time warp effect'
+        }
+        
+        if transformation_type not in valid_transformations:
+            raise ValueError(f"Invalid transformation type. Choose from: {list(valid_transformations.keys())}")
+        
+        # Validate intensity
+        if intensity < 0.0 or intensity > 1.0:
+            print(f"⚠️ Warning: Intensity {intensity} out of range [0.0, 1.0], using 0.5")
+            intensity = 0.5
+        
+        try:
+            import librosa
+            import soundfile as sf
+            import numpy as np
+            
+            voice_info = self.voice_samples[voice_id]
+            audio_path = voice_info['audio_path']
+            
+            if not os.path.exists(audio_path):
+                raise FileNotFoundError("Audio file not found")
+            
+            # Load audio
+            audio, sr = librosa.load(audio_path, sr=None)
+            
+            # Apply transformation based on type
+            transformed_audio = audio.copy()
+            
+            if transformation_type == 'robot':
+                # Robot effect: add metallic harmonics
+                harmonics = np.sin(2 * np.pi * 100 * np.arange(len(audio)) / sr) * intensity
+                transformed_audio = audio + harmonics * 0.3
+                
+            elif transformation_type == 'alien':
+                # Alien effect: pitch shift + reverb
+                transformed_audio = librosa.effects.pitch_shift(audio, sr=sr, n_steps=intensity * 8)
+                # Add alien harmonics
+                alien_freq = 200 + intensity * 300
+                alien_harmonics = np.sin(2 * np.pi * alien_freq * np.arange(len(audio)) / sr) * intensity
+                transformed_audio += alien_harmonics * 0.2
+                
+            elif transformation_type == 'monster':
+                # Monster effect: lower pitch + growl
+                transformed_audio = librosa.effects.pitch_shift(audio, sr=sr, n_steps=-intensity * 6)
+                # Add growl effect
+                growl_freq = 50 + intensity * 100
+                growl = np.sin(2 * np.pi * growl_freq * np.arange(len(audio)) / sr) * intensity
+                transformed_audio += growl * 0.4
+                
+            elif transformation_type == 'chipmunk':
+                # Chipmunk effect: higher pitch
+                transformed_audio = librosa.effects.pitch_shift(audio, sr=sr, n_steps=intensity * 8)
+                
+            elif transformation_type == 'giant':
+                # Giant effect: lower pitch + slow down
+                transformed_audio = librosa.effects.pitch_shift(audio, sr=sr, n_steps=-intensity * 4)
+                transformed_audio = librosa.effects.time_stretch(transformed_audio, rate=1.0 - intensity * 0.5)
+                
+            elif transformation_type == 'whisper':
+                # Whisper effect: reduce energy + add breath
+                transformed_audio = audio * (1.0 - intensity * 0.7)
+                breath_noise = np.random.normal(0, intensity * 0.1, len(audio))
+                transformed_audio += breath_noise
+                
+            elif transformation_type == 'radio':
+                # Radio effect: bandpass filter + noise
+                # Simple bandpass effect
+                low_freq = 300
+                high_freq = 3000
+                freqs = np.fft.fftfreq(len(audio), 1/sr)
+                mask = (freqs >= low_freq) & (freqs <= high_freq)
+                fft_audio = np.fft.fft(audio)
+                fft_audio[~mask] *= intensity * 0.3
+                transformed_audio = np.real(np.fft.ifft(fft_audio))
+                
+            elif transformation_type == 'underwater':
+                # Underwater effect: low-pass filter + bubble sounds
+                # Simple low-pass effect
+                cutoff_freq = 1000 + intensity * 2000
+                freqs = np.fft.fftfreq(len(audio), 1/sr)
+                mask = np.abs(freqs) <= cutoff_freq
+                fft_audio = np.fft.fft(audio)
+                fft_audio[~mask] *= intensity * 0.2
+                transformed_audio = np.real(np.fft.ifft(fft_audio))
+                
+                # Add bubble sounds
+                bubble_freq = 50 + intensity * 100
+                bubbles = np.sin(2 * np.pi * bubble_freq * np.arange(len(audio)) / sr) * intensity
+                transformed_audio += bubbles * 0.1
+                
+            elif transformation_type == 'space':
+                # Space effect: echo + reverb + cosmic sounds
+                # Add echo
+                delay_samples = int(sr * intensity * 0.5)
+                echo = np.zeros_like(audio)
+                echo[delay_samples:] = audio[:-delay_samples] * intensity * 0.6
+                transformed_audio += echo
+                
+                # Add cosmic sounds
+                cosmic_freq = 800 + intensity * 400
+                cosmic = np.sin(2 * np.pi * cosmic_freq * np.arange(len(audio)) / sr) * intensity
+                transformed_audio += cosmic * 0.2
+                
+            elif transformation_type == 'time_warp':
+                # Time warp effect: variable speed
+                warp_points = int(intensity * 10) + 1
+                segment_length = len(audio) // warp_points
+                warped_audio = []
+                
+                for i in range(warp_points):
+                    start = i * segment_length
+                    end = start + segment_length
+                    segment = audio[start:end]
+                    
+                    # Vary speed for each segment
+                    speed_factor = 0.5 + intensity * (i % 2)  # Alternate between slow and fast
+                    warped_segment = librosa.effects.time_stretch(segment, rate=speed_factor)
+                    warped_audio.append(warped_segment)
+                
+                transformed_audio = np.concatenate(warped_audio)
+                # Trim to original length
+                if len(transformed_audio) > len(audio):
+                    transformed_audio = transformed_audio[:len(audio)]
+                else:
+                    # Pad if shorter
+                    padding = np.zeros(len(audio) - len(transformed_audio))
+                    transformed_audio = np.concatenate([transformed_audio, padding])
+            
+            # Normalize audio
+            transformed_audio = librosa.util.normalize(transformed_audio)
+            
+            # Generate output path
+            if not output_path:
+                output_path = f"transformed_{voice_id}_{transformation_type}_{intensity:.2f}.wav"
+            
+            # Save transformed audio
+            sf.write(output_path, transformed_audio, sr)
+            
+            print(f"🎭 Voice transformation completed!")
+            print(f"🔧 Type: {transformation_type} ({valid_transformations[transformation_type]})")
+            print(f"⚡ Intensity: {intensity:.2f}")
+            print(f"📁 Output: {output_path}")
+            
+            return output_path
+            
+        except Exception as e:
+            print(f"❌ Error in voice transformation: {e}")
+            raise
+
 
 # Utility functions
 def validate_audio_file(audio_path: str) -> bool:
@@ -844,3 +1435,31 @@ if __name__ == "__main__":
     print("📝 Text Limit: 500 characters")
     print(f"🌍 Supported Languages: {len(cloner.SUPPORTED_LANGUAGES)} languages")
     print("🇻🇳 Vietnamese: Special handling with English base language") 
+
+    # Example of voice comparison
+    print("\n🔍 Voice Comparison Demo:")
+    try:
+        comparison_results = cloner.compare_voices(
+            "my_voice", "my_voice", "Hello, this is a voice comparison test. How do I sound?"
+        )
+        print(f"Comparison results: {json.dumps(comparison_results, indent=2)}")
+    except Exception as e:
+        print(f"❌ Voice comparison failed: {e}") 
+
+    # Example of real-time voice cloning
+    print("\n🔄 Real-time Voice Cloning Demo:")
+    try:
+        # Create a generator for text chunks
+        def text_generator():
+            yield "Hello, this is a real-time voice cloning test."
+            yield "This is the second chunk of the real-time test."
+            yield "And this is the final chunk."
+
+        # Stream the voice cloning
+        for result in cloner.stream_voice_cloning(text_generator(), "my_voice"):
+            if 'error' in result:
+                print(f"Error in stream: {result['error']}")
+            else:
+                print(f"Chunk {result['chunk_id']}: Audio size {result['audio_size']} bytes")
+    except Exception as e:
+        print(f"❌ Real-time voice cloning failed: {e}") 

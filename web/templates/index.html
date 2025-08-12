@@ -283,43 +283,102 @@
                                         <i class="fas fa-magic"></i> Audio Effects (Optional)
                                     </div>
                                     <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <label for="voice-type" class="form-label">Loại giọng</label>
-                                                <select class="form-select" id="voice-type">
-                                                    <option value="normal">Bình thường</option>
-                                                    <option value="male">Nam</option>
-                                                    <option value="female">Nữ</option>
-                                                    <option value="child">Trẻ em</option>
-                                                    <option value="elderly">Người già</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label for="age-group" class="form-label">Nhóm tuổi</label>
-                                                <select class="form-select" id="age-group">
-                                                    <option value="adult">Người lớn</option>
-                                                    <option value="child">Trẻ em</option>
-                                                    <option value="teen">Thanh thiếu niên</option>
-                                                    <option value="elderly">Người già</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="row mt-3">
-                                            <div class="col-md-6">
-                                                <label for="speed" class="form-label">Tốc độ</label>
-                                                <input type="range" class="range-slider" id="speed" min="0.5" max="2.0" step="0.1" value="1.0">
-                                                <div class="text-center">
-                                                    <span class="value-display" id="speed-value">1.0x</span>
+                                        <!-- Basic Effects Tab -->
+                                        <ul class="nav nav-tabs" id="effectsTabs" role="tablist">
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic-effects" type="button" role="tab">
+                                                    <i class="fas fa-sliders-h"></i> Basic
+                                                </button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link" id="advanced-tab" data-bs-toggle="tab" data-bs-target="#advanced-effects" type="button" role="tab">
+                                                    <i class="fas fa-cogs"></i> Advanced
+                                                </button>
+                                            </li>
+                                        </ul>
+                                        
+                                        <div class="tab-content mt-3" id="effectsTabContent">
+                                            <!-- Basic Effects -->
+                                            <div class="tab-pane fade show active" id="basic-effects" role="tabpanel">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <label for="voice-type" class="form-label">Loại giọng</label>
+                                                        <select class="form-select" id="voice-type">
+                                                            <option value="normal">Bình thường</option>
+                                                            <option value="male">Nam</option>
+                                                            <option value="female">Nữ</option>
+                                                            <option value="child">Trẻ em</option>
+                                                            <option value="elderly">Người già</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label for="age-group" class="form-label">Nhóm tuổi</label>
+                                                        <select class="form-select" id="age-group">
+                                                            <option value="adult">Người lớn</option>
+                                                            <option value="child">Trẻ em</option>
+                                                            <option value="teen">Thanh thiếu niên</option>
+                                                            <option value="elderly">Người già</option>
+                                                        </select>
+                                                    </div>
                                                 </div>
-                                                <div class="form-text text-center">0.5x (chậm) - 2.0x (nhanh)</div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label for="pitch" class="form-label">Pitch</label>
-                                                <input type="range" class="range-slider" id="pitch" min="-12" max="12" step="1" value="0">
-                                                <div class="text-center">
-                                                    <span class="value-display" id="pitch-value">0</span>
+                                                <div class="row mt-3">
+                                                    <div class="col-md-6">
+                                                        <label for="speed" class="form-label">Tốc độ</label>
+                                                        <input type="range" class="range-slider" id="speed" min="0.5" max="2.0" step="0.1" value="1.0">
+                                                        <div class="text-center">
+                                                            <span class="value-display" id="speed-value">1.0x</span>
+                                                        </div>
+                                                        <div class="form-text text-center">0.5x (chậm) - 2.0x (nhanh)</div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label for="pitch" class="form-label">Pitch</label>
+                                                        <input type="range" class="range-slider" id="pitch" min="-12" max="12" step="1" value="0">
+                                                        <div class="text-center">
+                                                            <span class="value-display" id="pitch-value">0</span>
+                                                        </div>
+                                                        <div class="form-text text-center">-12 (thấp) - +12 (cao)</div>
+                                                    </div>
                                                 </div>
-                                                <div class="form-text text-center">-12 (thấp) - +12 (cao)</div>
+                                            </div>
+                                            
+                                            <!-- Advanced Effects -->
+                                            <div class="tab-pane fade" id="advanced-effects" role="tabpanel">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <label for="reverb" class="form-label">Reverb</label>
+                                                        <input type="range" class="range-slider" id="reverb" min="0.0" max="1.0" step="0.1" value="0.0">
+                                                        <div class="text-center">
+                                                            <span class="value-display" id="reverb-value">0.0</span>
+                                                        </div>
+                                                        <div class="form-text text-center">0.0 (không) - 1.0 (nhiều)</div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label for="echo" class="form-label">Echo</label>
+                                                        <input type="range" class="range-slider" id="echo" min="0.0" max="1.0" step="0.1" value="0.0">
+                                                        <div class="text-center">
+                                                            <span class="value-display" id="echo-value">0.0</span>
+                                                        </div>
+                                                        <div class="form-text text-center">0.0 (không) - 1.0 (nhiều)</div>
+                                                    </div>
+                                                </div>
+                                                <div class="row mt-3">
+                                                    <div class="col-md-6">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="noise-reduction">
+                                                            <label class="form-check-label" for="noise-reduction">
+                                                                <i class="fas fa-volume-mute"></i> Noise Reduction
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="normalize" checked>
+                                                            <label class="form-check-label" for="normalize">
+                                                                <i class="fas fa-chart-line"></i> Normalize Audio
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -329,6 +388,86 @@
                                     <i class="fas fa-play"></i> Clone Voice
                                 </button>
                             </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Features Row -->
+            <div class="row mt-4">
+                <!-- Voice Transformation Card -->
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-theater-masks"></i> Voice Transformation
+                        </div>
+                        <div class="card-body">
+                            <form id="voice-transform-form">
+                                <div class="mb-3">
+                                    <label for="transform-voice-id" class="form-label">Chọn Voice</label>
+                                    <select class="form-select" id="transform-voice-id" required>
+                                        <option value="">Chọn voice để biến đổi...</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="transformation-type" class="form-label">Loại biến đổi</label>
+                                    <select class="form-select" id="transformation-type" required>
+                                        <option value="">Chọn loại biến đổi...</option>
+                                        <option value="robot">🤖 Robot Voice</option>
+                                        <option value="alien">👽 Alien Voice</option>
+                                        <option value="monster">👹 Monster Voice</option>
+                                        <option value="chipmunk">🐿️ Chipmunk Voice</option>
+                                        <option value="giant">👹 Giant Voice</option>
+                                        <option value="whisper">🤫 Whisper Voice</option>
+                                        <option value="radio">📻 Radio Effect</option>
+                                        <option value="underwater">🌊 Underwater Effect</option>
+                                        <option value="space">🚀 Space Effect</option>
+                                        <option value="time_warp">⏰ Time Warp Effect</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="transformation-intensity" class="form-label">Cường độ: <span id="intensity-value">0.5</span></label>
+                                    <input type="range" class="range-slider" id="transformation-intensity" min="0.0" max="1.0" step="0.1" value="0.5">
+                                    <div class="form-text text-center">0.0 (nhẹ) - 1.0 (mạnh)</div>
+                                </div>
+                                <button type="submit" class="btn btn-warning w-100">
+                                    <i class="fas fa-magic"></i> Transform Voice
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Voice Quality Assessment Card -->
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-chart-line"></i> Voice Quality Assessment
+                        </div>
+                        <div class="card-body">
+                            <form id="quality-assessment-form">
+                                <div class="mb-3">
+                                    <label for="quality-voice-id" class="form-label">Chọn Voice</label>
+                                    <select class="form-select" id="quality-voice-id" required>
+                                        <option value="">Chọn voice để đánh giá...</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-info w-100">
+                                    <i class="fas fa-search"></i> Assess Quality
+                                </button>
+                            </form>
+                            
+                            <!-- Quality Results -->
+                            <div id="quality-results" class="mt-3" style="display: none;">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">📊 Quality Assessment Results</h6>
+                                        <div id="quality-metrics">
+                                            <!-- Results will be displayed here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -395,10 +534,15 @@
             // Form event listeners
             document.getElementById('voice-upload-form').addEventListener('submit', handleVoiceUpload);
             document.getElementById('voice-clone-form').addEventListener('submit', handleVoiceClone);
+            document.getElementById('voice-transform-form').addEventListener('submit', handleVoiceTransform);
+            document.getElementById('quality-assessment-form').addEventListener('submit', handleQualityAssessment);
             
             // Audio effects event listeners
             document.getElementById('speed').addEventListener('input', updateSpeedValue);
             document.getElementById('pitch').addEventListener('input', updatePitchValue);
+            document.getElementById('reverb').addEventListener('input', updateReverbValue);
+            document.getElementById('echo').addEventListener('input', updateEchoValue);
+            document.getElementById('transformation-intensity').addEventListener('input', updateIntensityValue);
         });
         
         // Update speed value display
@@ -411,6 +555,24 @@
         function updatePitchValue() {
             const pitch = document.getElementById('pitch').value;
             document.getElementById('pitch-value').textContent = pitch;
+        }
+        
+        // Update reverb value display
+        function updateReverbValue() {
+            const reverb = document.getElementById('reverb').value;
+            document.getElementById('reverb-value').textContent = reverb;
+        }
+        
+        // Update echo value display
+        function updateEchoValue() {
+            const echo = document.getElementById('echo').value;
+            document.getElementById('echo-value').textContent = echo;
+        }
+        
+        // Update transformation intensity value display
+        function updateIntensityValue() {
+            const intensity = document.getElementById('transformation-intensity').value;
+            document.getElementById('intensity-value').textContent = intensity;
         }
 
         // Health check
@@ -624,6 +786,110 @@
             } finally {
                 showLoading(false);
             }
+        }
+
+        // Handle voice transformation
+        async function handleVoiceTransform(event) {
+            event.preventDefault();
+            
+            const voiceId = document.getElementById('transform-voice-id').value;
+            const transformationType = document.getElementById('transformation-type').value;
+            const intensity = parseFloat(document.getElementById('transformation-intensity').value);
+            
+            if (!voiceId) {
+                showAlert('Vui lòng chọn voice để biến đổi', 'warning');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const requestData = {
+                    voice_id: voiceId,
+                    transformation_type: transformationType,
+                    intensity: intensity
+                };
+
+                const response = await fetch('/api/transform_voice', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    playAudio(data.audio_url);
+                    document.getElementById('output-card').style.display = 'block';
+                    document.getElementById('output-card').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    showAlert(data.error || 'Transform voice thất bại', 'danger');
+                }
+                
+            } catch (error) {
+                console.error('Voice transformation failed:', error);
+                showAlert('Lỗi khi biến đổi voice', 'danger');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Handle quality assessment
+        async function handleQualityAssessment(event) {
+            event.preventDefault();
+            
+            const voiceId = document.getElementById('quality-voice-id').value;
+            
+            if (!voiceId) {
+                showAlert('Vui lòng chọn voice để đánh giá', 'warning');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const response = await fetch(`/api/assess_quality/${voiceId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    displayQualityResults(data.results);
+                    document.getElementById('quality-results').style.display = 'block';
+                    document.getElementById('quality-results').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    showAlert(data.error || 'Đánh giá chất lượng voice thất bại', 'danger');
+                }
+                
+            } catch (error) {
+                console.error('Quality assessment failed:', error);
+                showAlert('Lỗi khi đánh giá chất lượng voice', 'danger');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Display quality assessment results
+        function displayQualityResults(results) {
+            const qualityMetrics = document.getElementById('quality-metrics');
+            qualityMetrics.innerHTML = ''; // Clear previous results
+
+            if (results.length === 0) {
+                qualityMetrics.innerHTML = '<p class="text-muted">Không có kết quả đánh giá nào.</p>';
+                return;
+            }
+
+            results.forEach(metric => {
+                const metricDiv = document.createElement('div');
+                metricDiv.className = 'mb-3 p-3 bg-white rounded-lg shadow-sm';
+                metricDiv.innerHTML = `
+                    <h6 class="mb-2"><strong>${metric.name}:</strong> ${metric.value}</h6>
+                    <p class="text-muted small">${metric.description}</p>
+                `;
+                qualityMetrics.appendChild(metricDiv);
+            });
         }
 
         // Remove voice
