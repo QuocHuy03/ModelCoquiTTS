@@ -167,10 +167,10 @@ def synthesize():
         output_filename = f"output_{voice_id}_{uuid.uuid4().hex[:8]}.wav"
         output_path = os.path.join(OUTPUT_FOLDER, output_filename)
         
-        # Clone voice với audio effects
+        # Clone voice với advanced effects
         if any([voice_type != 'normal', age_group != 'adult', speed != 1.0, pitch_shift != 0]):
-            # Sử dụng method với effects
-            result_path = voice_cloner.clone_voice_with_effects(
+            # Sử dụng method với advanced effects
+            result_path = voice_cloner.clone_voice_with_advanced_effects(
                 text, voice_id, output_path, 
                 language=language if language else None,
                 speed=speed, pitch_shift=pitch_shift,
@@ -205,6 +205,135 @@ def get_audio(filename):
             return send_file(file_path, mimetype='audio/wav')
         else:
             return jsonify({'error': 'Audio file not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/transform_voice', methods=['POST'])
+def transform_voice():
+    """Transform voice with special effects"""
+    if not voice_cloner:
+        return jsonify({'error': 'Voice cloner not initialized'}), 500
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        
+        voice_id = data.get('voice_id', '').strip()
+        transformation_type = data.get('transformation_type', '').strip()
+        intensity = data.get('intensity', 0.5)
+        
+        if not voice_id:
+            return jsonify({'error': 'Voice ID is required'}), 400
+        
+        if not transformation_type:
+            return jsonify({'error': 'Transformation type is required'}), 400
+        
+        # Check if voice exists
+        if voice_id not in voice_cloner.get_available_voices():
+            return jsonify({'error': f'Voice ID "{voice_id}" not found'}), 404
+        
+        # Generate unique output filename
+        output_filename = f"transform_{voice_id}_{transformation_type}_{uuid.uuid4().hex[:8]}.wav"
+        output_path = os.path.join(OUTPUT_FOLDER, output_filename)
+        
+        # Transform voice
+        result_path = voice_cloner.transform_voice(
+            voice_id, transformation_type, intensity, output_path
+        )
+        
+        if os.path.exists(result_path):
+            return jsonify({
+                'success': True,
+                'audio_url': f'/api/audio/{output_filename}',
+                'message': f'Voice transformation completed successfully: {transformation_type}'
+            })
+        else:
+            return jsonify({'error': 'Failed to transform voice'}), 500
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/assess_quality/<voice_id>', methods=['GET'])
+def assess_quality(voice_id):
+    """Assess voice quality"""
+    if not voice_cloner:
+        return jsonify({'error': 'Voice cloner not initialized'}), 500
+    
+    try:
+        # Check if voice exists
+        if voice_id not in voice_cloner.get_available_voices():
+            return jsonify({'error': f'Voice ID "{voice_id}" not found'}), 404
+        
+        # Assess voice quality
+        quality_results = voice_cloner.assess_voice_quality(voice_id)
+        
+        # Format results for display
+        formatted_results = []
+        for key, value in quality_results.items():
+            if key == 'overall_score':
+                formatted_results.append({
+                    'name': 'Overall Score',
+                    'value': f"{value:.1f}/100",
+                    'description': f'Overall quality score: {value:.1f} out of 100'
+                })
+            elif key == 'quality_level':
+                formatted_results.append({
+                    'name': 'Quality Level',
+                    'value': value,
+                    'description': f'Quality assessment: {value}'
+                })
+            elif key == 'duration':
+                formatted_results.append({
+                    'name': 'Duration',
+                    'value': f"{value:.1f}s",
+                    'description': f'Audio duration: {value:.1f} seconds'
+                })
+            elif key == 'sample_rate':
+                formatted_results.append({
+                    'name': 'Sample Rate',
+                    'value': f"{value} Hz",
+                    'description': f'Audio sample rate: {value} Hz'
+                })
+            elif key == 'rms_energy':
+                formatted_results.append({
+                    'name': 'RMS Energy',
+                    'value': f"{value:.3f}",
+                    'description': f'Root Mean Square energy: {value:.3f}'
+                })
+            elif key == 'peak_amplitude':
+                formatted_results.append({
+                    'name': 'Peak Amplitude',
+                    'value': f"{value:.3f}",
+                    'description': f'Peak audio amplitude: {value:.3f}'
+                })
+            elif key == 'spectral_centroids':
+                formatted_results.append({
+                    'name': 'Spectral Centroids',
+                    'value': f"{value:.1f} Hz",
+                    'description': f'Average spectral centroid: {value:.1f} Hz'
+                })
+            elif key == 'mfcc_variance':
+                formatted_results.append({
+                    'name': 'MFCC Variance',
+                    'value': f"{value:.3f}",
+                    'description': f'Mel-frequency cepstral coefficient variance: {value:.3f}'
+                })
+            elif key == 'snr':
+                formatted_results.append({
+                    'name': 'Signal-to-Noise Ratio',
+                    'value': f"{value:.1f} dB",
+                    'description': f'Signal-to-noise ratio: {value:.1f} dB'
+                })
+        
+        return jsonify({
+            'success': True,
+            'message': f'Quality assessment completed for voice "{voice_id}"',
+            'results': formatted_results
+        })
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

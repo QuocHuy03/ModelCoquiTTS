@@ -1209,83 +1209,63 @@ class VoiceCloner:
             transformed_audio = audio.copy()
             
             if transformation_type == 'robot':
-                # Robot effect: add metallic harmonics
-                harmonics = np.sin(2 * np.pi * 100 * np.arange(len(audio)) / sr) * intensity
-                transformed_audio = audio + harmonics * 0.3
+                # Robot effect: subtle metallic harmonics + pitch shift
+                transformed_audio = librosa.effects.pitch_shift(audio, sr=sr, n_steps=intensity * 2)
+                # Very subtle harmonics
+                harmonics = np.sin(2 * np.pi * 150 * np.arange(len(audio)) / sr) * intensity * 0.1
+                transformed_audio += harmonics
                 
             elif transformation_type == 'alien':
-                # Alien effect: pitch shift + reverb
-                transformed_audio = librosa.effects.pitch_shift(audio, sr=sr, n_steps=intensity * 8)
-                # Add alien harmonics
-                alien_freq = 200 + intensity * 300
-                alien_harmonics = np.sin(2 * np.pi * alien_freq * np.arange(len(audio)) / sr) * intensity
-                transformed_audio += alien_harmonics * 0.2
+                # Alien effect: pitch shift only (no harmonics)
+                transformed_audio = librosa.effects.pitch_shift(audio, sr=sr, n_steps=intensity * 6)
                 
             elif transformation_type == 'monster':
-                # Monster effect: lower pitch + growl
-                transformed_audio = librosa.effects.pitch_shift(audio, sr=sr, n_steps=-intensity * 6)
-                # Add growl effect
-                growl_freq = 50 + intensity * 100
-                growl = np.sin(2 * np.pi * growl_freq * np.arange(len(audio)) / sr) * intensity
-                transformed_audio += growl * 0.4
+                # Monster effect: lower pitch only (no growl)
+                transformed_audio = librosa.effects.pitch_shift(audio, sr=sr, n_steps=-intensity * 4)
                 
             elif transformation_type == 'chipmunk':
-                # Chipmunk effect: higher pitch
-                transformed_audio = librosa.effects.pitch_shift(audio, sr=sr, n_steps=intensity * 8)
+                # Chipmunk effect: higher pitch only
+                transformed_audio = librosa.effects.pitch_shift(audio, sr=sr, n_steps=intensity * 6)
                 
             elif transformation_type == 'giant':
-                # Giant effect: lower pitch + slow down
-                transformed_audio = librosa.effects.pitch_shift(audio, sr=sr, n_steps=-intensity * 4)
-                transformed_audio = librosa.effects.time_stretch(transformed_audio, rate=1.0 - intensity * 0.5)
+                # Giant effect: lower pitch + subtle slow down
+                transformed_audio = librosa.effects.pitch_shift(audio, sr=sr, n_steps=-intensity * 3)
+                if intensity > 0.5:
+                    transformed_audio = librosa.effects.time_stretch(transformed_audio, rate=1.0 - intensity * 0.3)
                 
             elif transformation_type == 'whisper':
-                # Whisper effect: reduce energy + add breath
-                transformed_audio = audio * (1.0 - intensity * 0.7)
-                breath_noise = np.random.normal(0, intensity * 0.1, len(audio))
-                transformed_audio += breath_noise
+                # Whisper effect: reduce energy only (no breath noise)
+                transformed_audio = audio * (1.0 - intensity * 0.5)
                 
             elif transformation_type == 'radio':
-                # Radio effect: bandpass filter + noise
-                # Simple bandpass effect
+                # Radio effect: bandpass filter only (no noise)
                 low_freq = 300
                 high_freq = 3000
                 freqs = np.fft.fftfreq(len(audio), 1/sr)
                 mask = (freqs >= low_freq) & (freqs <= high_freq)
                 fft_audio = np.fft.fft(audio)
-                fft_audio[~mask] *= intensity * 0.3
+                fft_audio[~mask] *= intensity * 0.5
                 transformed_audio = np.real(np.fft.ifft(fft_audio))
                 
             elif transformation_type == 'underwater':
-                # Underwater effect: low-pass filter + bubble sounds
-                # Simple low-pass effect
+                # Underwater effect: low-pass filter only (no bubbles)
                 cutoff_freq = 1000 + intensity * 2000
                 freqs = np.fft.fftfreq(len(audio), 1/sr)
                 mask = np.abs(freqs) <= cutoff_freq
                 fft_audio = np.fft.fft(audio)
-                fft_audio[~mask] *= intensity * 0.2
+                fft_audio[~mask] *= intensity * 0.4
                 transformed_audio = np.real(np.fft.ifft(fft_audio))
                 
-                # Add bubble sounds
-                bubble_freq = 50 + intensity * 100
-                bubbles = np.sin(2 * np.pi * bubble_freq * np.arange(len(audio)) / sr) * intensity
-                transformed_audio += bubbles * 0.1
-                
             elif transformation_type == 'space':
-                # Space effect: echo + reverb + cosmic sounds
-                # Add echo
-                delay_samples = int(sr * intensity * 0.5)
+                # Space effect: subtle echo only (no cosmic sounds)
+                delay_samples = int(sr * intensity * 0.3)
                 echo = np.zeros_like(audio)
-                echo[delay_samples:] = audio[:-delay_samples] * intensity * 0.6
+                echo[delay_samples:] = audio[:-delay_samples] * intensity * 0.3
                 transformed_audio += echo
                 
-                # Add cosmic sounds
-                cosmic_freq = 800 + intensity * 400
-                cosmic = np.sin(2 * np.pi * cosmic_freq * np.arange(len(audio)) / sr) * intensity
-                transformed_audio += cosmic * 0.2
-                
             elif transformation_type == 'time_warp':
-                # Time warp effect: variable speed
-                warp_points = int(intensity * 10) + 1
+                # Time warp effect: gentle speed variation
+                warp_points = int(intensity * 5) + 1
                 segment_length = len(audio) // warp_points
                 warped_audio = []
                 
@@ -1294,8 +1274,8 @@ class VoiceCloner:
                     end = start + segment_length
                     segment = audio[start:end]
                     
-                    # Vary speed for each segment
-                    speed_factor = 0.5 + intensity * (i % 2)  # Alternate between slow and fast
+                    # Gentle speed variation
+                    speed_factor = 0.8 + intensity * 0.4  # Range: 0.8 - 1.2
                     warped_segment = librosa.effects.time_stretch(segment, rate=speed_factor)
                     warped_audio.append(warped_segment)
                 
@@ -1307,6 +1287,14 @@ class VoiceCloner:
                     # Pad if shorter
                     padding = np.zeros(len(audio) - len(transformed_audio))
                     transformed_audio = np.concatenate([transformed_audio, padding])
+            
+            # Clean up audio: remove noise and artifacts
+            # Apply gentle noise gate to remove very low amplitude noise
+            noise_threshold = 0.01 * intensity
+            transformed_audio[np.abs(transformed_audio) < noise_threshold] = 0
+            
+            # Apply gentle compression to smooth out dynamics
+            transformed_audio = np.tanh(transformed_audio * 0.8)
             
             # Normalize audio
             transformed_audio = librosa.util.normalize(transformed_audio)

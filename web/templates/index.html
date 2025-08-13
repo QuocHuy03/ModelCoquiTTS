@@ -670,20 +670,41 @@
             voicesList.innerHTML = html;
         }
 
-        // Update voice select dropdown
+        // Update voice select dropdowns
         function updateVoiceSelect() {
-            const select = document.getElementById('clone-voice-id');
             const voiceIds = Object.keys(voices);
             
-            // Clear existing options
-            select.innerHTML = '<option value="">Chọn voice để clone...</option>';
+            // Update Clone Voice dropdown
+            const cloneSelect = document.getElementById('clone-voice-id');
+            cloneSelect.innerHTML = '<option value="">Chọn voice để clone...</option>';
             
-            // Add voice options
+            // Update Voice Transformation dropdown
+            const transformSelect = document.getElementById('transform-voice-id');
+            transformSelect.innerHTML = '<option value="">Chọn voice để biến đổi...</option>';
+            
+            // Update Voice Quality Assessment dropdown
+            const qualitySelect = document.getElementById('quality-voice-id');
+            qualitySelect.innerHTML = '<option value="">Chọn voice để đánh giá...</option>';
+            
+            // Add voice options to all dropdowns
             voiceIds.forEach(voiceId => {
-                const option = document.createElement('option');
-                option.value = voiceId;
-                option.textContent = voiceId;
-                select.appendChild(option);
+                // Clone Voice dropdown
+                const cloneOption = document.createElement('option');
+                cloneOption.value = voiceId;
+                cloneOption.textContent = voiceId;
+                cloneSelect.appendChild(cloneOption);
+                
+                // Voice Transformation dropdown
+                const transformOption = document.createElement('option');
+                transformOption.value = voiceId;
+                transformOption.textContent = voiceId;
+                transformSelect.appendChild(transformOption);
+                
+                // Voice Quality Assessment dropdown
+                const qualityOption = document.createElement('option');
+                qualityOption.value = voiceId;
+                qualityOption.textContent = voiceId;
+                qualitySelect.appendChild(qualityOption);
             });
         }
 
