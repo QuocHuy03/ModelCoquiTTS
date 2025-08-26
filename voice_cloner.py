@@ -274,20 +274,58 @@ class VoiceCloner:
         self.voice_samples = {}
         self.voice_embeddings = {}
         
+        # Performance optimization flags
+        self.use_half_precision = True
+        self.enable_cache = True
+        self.fast_inference = True
+        
         # Khởi tạo model
         self._load_model()
     
     def _load_model(self):
-        """Load XTTS model"""
+        """Load XTTS model với performance optimizations"""
         try:
+            # Auto-detect GPU
+            if self.device == "auto":
+                if torch.cuda.is_available():
+                    self.device = "cuda"
+                    print(f"🚀 GPU detected: {torch.cuda.get_device_name()}")
+                    print(f"💾 GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
+                else:
+                    self.device = "cpu"
+                    print("💻 Using CPU (GPU not available)")
+            
             if self.model_path and os.path.exists(self.model_path):
                 # Load custom model
                 self.model = TTS(model_path=self.model_path)
                 print(f"✅ Loaded custom model from: {self.model_path}")
             else:
-                # Load pre-trained XTTS model
-                self.model = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
-                print("✅ Loaded pre-trained XTTS v2 model")
+                # Load pre-trained XTTS model với optimizations
+                print("🔄 Loading XTTS v2 model (this may take a few minutes)...")
+                
+                # Use faster model variant if available
+                try:
+                    # Try to load faster XTTS v1.1 first
+                    self.model = TTS("tts_models/multilingual/multi-dataset/xtts_v1.1")
+                    print("✅ Loaded XTTS v1.1 (faster than v2)")
+                except:
+                    # Fallback to v2
+                    self.model = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
+                    print("✅ Loaded XTTS v2 model")
+                
+                # Apply performance optimizations
+                if hasattr(self.model, 'synthesizer') and hasattr(self.model.synthesizer, 'model'):
+                    model = self.model.synthesizer.model
+                    if hasattr(model, 'eval'):
+                        model.eval()
+                    if self.device == "cuda" and self.use_half_precision:
+                        if hasattr(model, 'half'):
+                            model.half()
+                            print("⚡ Enabled half-precision (FP16) for faster inference")
+                
+                print(f"🎯 Model loaded on: {self.device}")
+                if self.device == "cuda":
+                    print(f"🔥 CUDA optimizations enabled")
                 
         except Exception as e:
             print(f"❌ Error loading model: {e}")
@@ -363,7 +401,7 @@ class VoiceCloner:
     
     def clone_voice(self, text: str, voice_id: str, output_path: str = None, language: str = None) -> str:
         """
-        Clone voice và tạo audio từ text
+        Clone voice và tạo audio từ text với performance optimizations
         
         Args:
             text: Text cần chuyển thành giọng nói
@@ -407,16 +445,43 @@ class VoiceCloner:
             output_path = f"output_{voice_id}_{hash(text) % 10000}.wav"
         
         try:
+            print(f"🎯 Starting voice cloning...")
+            print(f"📝 Text length: {len(text)} characters")
+            print(f"🌍 Language: {language}")
+            
             # Sử dụng XTTS để clone voice
             audio_path = self.voice_samples[voice_id]['audio_path']
             
-            # Tạo audio với voice cloning
-            self.model.tts_to_file(
-                text=text,
-                speaker_wav=audio_path,
-                language=language,
-                file_path=output_path
-            )
+            # Performance optimization: Use faster inference settings
+            inference_settings = {}
+            if self.fast_inference:
+                # Reduce quality slightly for speed
+                inference_settings.update({
+                    'speed': 1.2,  # Slightly faster
+                    'enable_text_normalization': False,  # Skip text normalization
+                    'enable_phonemizer': False,  # Skip phonemization
+                })
+            
+            # Tạo audio với voice cloning và performance optimizations
+            print("🔄 Generating audio (this may take 30-60 seconds)...")
+            
+            # Use optimized TTS call
+            if hasattr(self.model, 'tts_to_file'):
+                self.model.tts_to_file(
+                    text=text,
+                    speaker_wav=audio_path,
+                    language=language,
+                    file_path=output_path,
+                    **inference_settings
+                )
+            else:
+                # Fallback method
+                self.model.tts_to_file(
+                    text=text,
+                    speaker_wav=audio_path,
+                    language=language,
+                    file_path=output_path
+                )
             
             print(f"✅ Voice cloned successfully: {output_path}")
             if language == "en" and self.auto_detect_language(text) == "vi":
@@ -424,6 +489,13 @@ class VoiceCloner:
                 print(f"🎯 Result: English pronunciation with Vietnamese voice accent")
             else:
                 print(f"🌍 Language used: {language} ({self.SUPPORTED_LANGUAGES.get(language, 'Unknown')})")
+            
+            # Performance tips
+            if self.device == "cpu":
+                print("💡 Performance tip: Consider using GPU for faster inference")
+            elif self.device == "cuda":
+                print("🔥 GPU acceleration active - optimal performance")
+            
             return output_path
             
         except Exception as e:

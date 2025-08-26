@@ -549,10 +549,20 @@ if __name__ == '__main__':
         print("❌ Failed to initialize voice cloner")
         print("⚠️ Some features may not work properly")
     
-    # Run the app
+    # Run the app (configurable via env vars)
+    host = os.getenv('HOST', '0.0.0.0')
+    try:
+        port = int(os.getenv('PORT', '5000'))
+    except ValueError:
+        port = 5000
+    debug_env = os.getenv('DEBUG', 'true').lower()
+    debug = debug_env in ('1', 'true', 'yes', 'y')
+    threaded = os.getenv('THREADED', 'true').lower() in ('1', 'true', 'yes', 'y')
+
+    print(f"🚀 Listening on http://{host}:{port} (debug={debug}, threaded={threaded})")
     app.run(
-        host='0.0.0.0',
-        port=5000,
-        debug=True,
-        threaded=True
-    ) 
+        host=host,
+        port=port,
+        debug=debug,
+        threaded=threaded
+    )
