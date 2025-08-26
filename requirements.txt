@@ -1,9 +1,10 @@
 coqui-tts>=0.14.0
 torch>=1.13.0
 torchaudio>=0.13.0
-numpy>=1.21.0
+numpy<2.3,>=1.21.0
 scipy>=1.9.0
-librosa>=0.9.2
+librosa>=0.10.1
+numba>=0.59,<0.60
 soundfile>=0.12.1
 matplotlib>=3.5.0
 tqdm>=4.64.0
