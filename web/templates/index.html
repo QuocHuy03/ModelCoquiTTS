@@ -80,6 +80,34 @@
             background: linear-gradient(135deg, #fa709a, #fee140);
         }
         
+        /* Toast alerts */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1060;
+        }
+        .app-toast {
+            min-width: 280px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 6px solid #667eea;
+            animation: slideIn .35s ease-out;
+        }
+        .app-toast.success { border-left-color: #22c55e; }
+        .app-toast.warning { border-left-color: #f59e0b; }
+        .app-toast.danger { border-left-color: #ef4444; }
+        .app-toast .icon { font-size: 18px; }
+        .app-toast .msg { font-weight: 600; }
+        .app-toast .close { margin-left: auto; cursor: pointer; border: none; background: transparent; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        
         .form-control, .form-select {
             border-radius: 15px;
             border: 2px solid #e2e8f0;
@@ -508,8 +536,11 @@
                 </div>
             </div>
 
+            <!-- Current user indicator -->
+            <div class="mb-3" id="current-user-label" style="display:none;"></div>
+
             <!-- Alerts -->
-            <div id="alerts-container"></div>
+            <div id="alerts-container" class="toast-container"></div>
         </div>
     </div>
 
@@ -517,9 +548,24 @@
     <script>
         // Global variables
         let voices = {};
+        let currentUserId = '';
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
+            // Load saved user_id if any
+            currentUserId = localStorage.getItem('user_id') || '';
+            if (!currentUserId) {
+                // If not logged in, redirect to login page
+                window.location.href = '/';
+                return;
+            } else {
+                const label = document.getElementById('current-user-label');
+                if (label) {
+                    label.style.display = 'block';
+                    label.textContent = `Đang dùng User ID: ${currentUserId}`;
+                }
+            }
+
             checkHealth();
             refreshVoices();
             
@@ -605,7 +651,8 @@
         // Refresh voices list
         async function refreshVoices() {
             try {
-                const response = await fetch('/api/voices');
+                const url = currentUserId ? `/api/voices?user_id=${encodeURIComponent(currentUserId)}` : '/api/voices';
+                const response = await fetch(url);
                 const data = await response.json();
                 
                 voices = data.voices || {};
@@ -709,13 +756,18 @@
             const voiceId = document.getElementById('voice-id').value;
             const voiceText = document.getElementById('voice-text').value;
             
+            if (!currentUserId) {
+                showAlert('Vui lòng nhập User ID trước khi upload', 'warning');
+                return;
+            }
+
             if (!audioFile) {
                 showAlert('Vui lòng chọn file audio', 'warning');
                 return;
             }
             
             formData.append('audio', audioFile);
-            if (voiceId) formData.append('voice_id', voiceId);
+            formData.append('user_id', currentUserId);
             if (voiceText) formData.append('text', voiceText);
             
             showLoading(true);
@@ -756,6 +808,11 @@
             const speed = parseFloat(document.getElementById('speed').value);
             const pitch = parseInt(document.getElementById('pitch').value);
             
+            if (!currentUserId) {
+                showAlert('Vui lòng nhập User ID trước khi clone', 'warning');
+                return;
+            }
+
             if (!voiceId || !text) {
                 showAlert('Vui lòng chọn voice và nhập text', 'warning');
                 return;
@@ -765,6 +822,7 @@
             
             try {
                 const requestData = {
+                    user_id: currentUserId,
                     voice_id: voiceId,
                     text: text,
                     language: language || undefined,
@@ -809,6 +867,11 @@
             const transformationType = document.getElementById('transformation-type').value;
             const intensity = parseFloat(document.getElementById('transformation-intensity').value);
             
+            if (!currentUserId) {
+                showAlert('Vui lòng nhập User ID trước khi biến đổi voice', 'warning');
+                return;
+            }
+
             if (!voiceId) {
                 showAlert('Vui lòng chọn voice để biến đổi', 'warning');
                 return;
@@ -818,6 +881,7 @@
 
             try {
                 const requestData = {
+                    user_id: currentUserId,
                     voice_id: voiceId,
                     transformation_type: transformationType,
                     intensity: intensity
@@ -856,6 +920,11 @@
             
             const voiceId = document.getElementById('quality-voice-id').value;
             
+            if (!currentUserId) {
+                showAlert('Vui lòng nhập User ID trước khi đánh giá', 'warning');
+                return;
+            }
+
             if (!voiceId) {
                 showAlert('Vui lòng chọn voice để đánh giá', 'warning');
                 return;
@@ -864,7 +933,7 @@
             showLoading(true);
 
             try {
-                const response = await fetch(`/api/assess_quality/${voiceId}`);
+                const response = await fetch(`/api/assess_quality/${voiceId}?user_id=${encodeURIComponent(currentUserId)}`);
                 const data = await response.json();
 
                 if (data.success) {
@@ -910,6 +979,10 @@
             if (!confirm(`Bạn có chắc muốn xóa voice "${voiceId}"?`)) {
                 return;
             }
+            if (!currentUserId) {
+                showAlert('Vui lòng nhập User ID trước khi xóa', 'warning');
+                return;
+            }
             
             try {
                 const response = await fetch('/api/remove_voice', {
@@ -917,7 +990,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ voice_id: voiceId })
+                    body: JSON.stringify({ user_id: currentUserId, voice_id: voiceId })
                 });
                 
                 const data = await response.json();
@@ -960,6 +1033,31 @@
             `;
         }
 
+        async function handleLogin(event) {
+            event.preventDefault();
+            const v = document.getElementById('user-id-input').value.trim();
+            if (!v) { showAlert('User ID rỗng', 'warning'); return; }
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: v })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    currentUserId = v;
+                    localStorage.setItem('user_id', currentUserId);
+                    document.getElementById('current-user-label').textContent = `Đang dùng User ID: ${currentUserId}`;
+                    showAlert('Đăng nhập thành công', 'success');
+                    refreshVoices();
+                } else {
+                    showAlert(data.error || 'Đăng nhập thất bại', 'danger');
+                }
+            } catch (e) {
+                showAlert('Lỗi đăng nhập', 'danger');
+            }
+        }
+
         // Show/hide loading
         function showLoading(show) {
             document.getElementById('loading').style.display = show ? 'block' : 'none';
@@ -967,25 +1065,22 @@
 
         // Show alert
         function showAlert(message, type) {
-            const alertsContainer = document.getElementById('alerts-container');
-            const alertId = 'alert-' + Date.now();
-            
-            const alertHtml = `
-                <div class="alert alert-${type} alert-dismissible fade show" id="${alertId}" role="alert" style="border-radius: 15px;">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle'} me-2"></i>
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            const container = document.getElementById('alerts-container');
+            const id = 'toast-' + Date.now();
+            const icon = type === 'success' ? 'check-circle' : (type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle');
+            const toast = `
+                <div class="app-toast ${type}" id="${id}">
+                    <i class="fas fa-${icon} icon"></i>
+                    <div class="msg">${message}</div>
+                    <button class="close" aria-label="Close" onclick="document.getElementById('${id}').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             `;
-            
-            alertsContainer.insertAdjacentHTML('beforeend', alertHtml);
-            
-            // Auto-remove after 5 seconds
+            container.insertAdjacentHTML('beforeend', toast);
             setTimeout(() => {
-                const alert = document.getElementById(alertId);
-                if (alert) {
-                    alert.remove();
-                }
+                const el = document.getElementById(id);
+                if (el) el.remove();
             }, 5000);
         }
 

@@ -24,10 +24,86 @@ voice_cloner = None
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'output'
 ALLOWED_EXTENSIONS = {'wav', 'mp3', 'flac', 'm4a'}
+USERS_FILE = 'users.json'
 
 # Create necessary directories
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+# In-memory users cache
+USERS = {}
+
+
+def load_users():
+    """Load predefined users from users.json"""
+    global USERS
+    try:
+        if os.path.exists(USERS_FILE):
+            with open(USERS_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                # support {"users": [{"user_id": "...", "name": "..."}, ...]} or {"028": {...}}
+                if isinstance(data, dict) and 'users' in data and isinstance(data['users'], list):
+                    USERS = {u.get('user_id'): u for u in data['users'] if u.get('user_id')}
+                elif isinstance(data, dict):
+                    USERS = {k: v for k, v in data.items()}
+                else:
+                    USERS = {}
+        else:
+            USERS = {}
+    except Exception as e:
+        print(f"⚠️ Failed to load users: {e}")
+        USERS = {}
+
+
+def get_request_user_id():
+    """Extract user_id from request (header, args, form, or json)."""
+    # Header
+    user_id = request.headers.get('X-User-Id')
+    if user_id:
+        return user_id.strip()
+    # Query args
+    user_id = request.args.get('user_id')
+    if user_id:
+        return user_id.strip()
+    # Form
+    if request.form is not None:
+        user_id = request.form.get('user_id')
+        if user_id:
+            return user_id.strip()
+    # JSON
+    try:
+        data = request.get_json(silent=True) or {}
+        user_id = data.get('user_id')
+        if user_id:
+            return user_id.strip()
+    except Exception:
+        pass
+    return None
+
+
+def get_user_voice_id(user_id: str) -> str:
+    return f"voice_{user_id}"
+
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    """Simple login using predefined users.json. Expects JSON {"user_id": "..."}."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        user_id = (data.get('user_id') or '').strip()
+        if not user_id:
+            return jsonify({'error': 'Missing user_id'}), 400
+        if USERS and user_id not in USERS:
+            return jsonify({'error': 'Invalid user_id'}), 403
+        user_info = USERS.get(user_id, {'user_id': user_id})
+        return jsonify({
+            'success': True,
+            'user': user_info
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 def allowed_file(filename):
@@ -60,21 +136,32 @@ def init_voice_cloner():
 
 @app.route('/')
 def index():
-    """Main page"""
+    """Login page"""
+    return render_template('login.html')
+
+
+@app.route('/app')
+def app_page():
+    """Main clone voice app page"""
     return render_template('index.html')
 
 
 @app.route('/api/voices', methods=['GET'])
 def get_voices():
-    """Get available voices"""
+    """Get available voices for current user (if provided)"""
     if not voice_cloner:
         return jsonify({'error': 'Voice cloner not initialized'}), 500
     
     try:
+        user_id = get_request_user_id()
         voices = voice_cloner.get_available_voices()
         voice_info = {}
         
         for voice_id in voices:
+            # If user_id provided, only expose that user's voice
+            if user_id:
+                if voice_id != get_user_voice_id(user_id):
+                    continue
             info = voice_cloner.get_voice_info(voice_id)
             if info:
                 voice_info[voice_id] = info
@@ -95,6 +182,13 @@ def upload_voice():
         return jsonify({'error': 'Voice cloner not initialized'}), 500
     
     try:
+        # Require user_id
+        user_id = get_request_user_id()
+        if not user_id:
+            return jsonify({'error': 'Missing user_id'}), 400
+        if USERS and user_id not in USERS:
+            return jsonify({'error': 'Invalid user_id'}), 403
+
         # Check if file was uploaded
         if 'audio' not in request.files:
             return jsonify({'error': 'No audio file provided'}), 400
@@ -110,15 +204,17 @@ def upload_voice():
         voice_id = request.form.get('voice_id', '').strip()
         text = request.form.get('text', '').strip()
         
-        if not voice_id:
-            voice_id = f"voice_{uuid.uuid4().hex[:8]}"
+        # Force single voice per user
+        voice_id = get_user_voice_id(user_id)
         
         if not text:
             text = "Voice sample"
         
         # Save uploaded file
-        filename = f"{voice_id}_{file.filename}"
-        file_path = os.path.join(UPLOAD_FOLDER, filename)
+        user_dir = os.path.join(UPLOAD_FOLDER, user_id)
+        os.makedirs(user_dir, exist_ok=True)
+        filename = f"{file.filename}"
+        file_path = os.path.join(user_dir, filename)
         file.save(file_path)
         
         # Add voice sample
@@ -145,8 +241,14 @@ def synthesize():
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
         
+        user_id = data.get('user_id', '').strip()
+        if not user_id:
+            return jsonify({'error': 'Missing user_id'}), 400
+        if USERS and user_id not in USERS:
+            return jsonify({'error': 'Invalid user_id'}), 403
+
         text = data.get('text', '').strip()
-        voice_id = data.get('voice_id', '').strip()
+        voice_id = get_user_voice_id(user_id)
         language = data.get('language', '').strip()  # Optional language parameter
         voice_type = data.get('voice_type', 'normal')  # Voice type effects
         age_group = data.get('age_group', 'adult')  # Age group effects
@@ -156,16 +258,15 @@ def synthesize():
         if not text:
             return jsonify({'error': 'Text is required'}), 400
         
-        if not voice_id:
-            return jsonify({'error': 'Voice ID is required'}), 400
-        
         # Check if voice exists
         if voice_id not in voice_cloner.get_available_voices():
             return jsonify({'error': f'Voice ID "{voice_id}" not found'}), 404
         
         # Generate unique output filename
-        output_filename = f"output_{voice_id}_{uuid.uuid4().hex[:8]}.wav"
-        output_path = os.path.join(OUTPUT_FOLDER, output_filename)
+        user_out_dir = os.path.join(OUTPUT_FOLDER, user_id)
+        os.makedirs(user_out_dir, exist_ok=True)
+        output_filename = f"output_{uuid.uuid4().hex[:8]}.wav"
+        output_path = os.path.join(user_out_dir, output_filename)
         
         # Clone voice với advanced effects
         if any([voice_type != 'normal', age_group != 'adult', speed != 1.0, pitch_shift != 0]):
@@ -186,7 +287,7 @@ def synthesize():
         if os.path.exists(result_path):
             return jsonify({
                 'success': True,
-                'audio_url': f'/api/audio/{output_filename}',
+                'audio_url': f'/api/audio/{user_id}/{output_filename}',
                 'message': 'Voice cloning completed successfully'
             })
         else:
@@ -196,11 +297,11 @@ def synthesize():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/audio/<filename>')
-def get_audio(filename):
+@app.route('/api/audio/<user_id>/<filename>')
+def get_audio(user_id, filename):
     """Serve audio files"""
     try:
-        file_path = os.path.join(OUTPUT_FOLDER, filename)
+        file_path = os.path.join(OUTPUT_FOLDER, user_id, filename)
         if os.path.exists(file_path):
             return send_file(file_path, mimetype='audio/wav')
         else:
@@ -220,7 +321,13 @@ def transform_voice():
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
         
-        voice_id = data.get('voice_id', '').strip()
+        user_id = data.get('user_id', '').strip()
+        if not user_id:
+            return jsonify({'error': 'Missing user_id'}), 400
+        if USERS and user_id not in USERS:
+            return jsonify({'error': 'Invalid user_id'}), 403
+
+        voice_id = get_user_voice_id(user_id)
         transformation_type = data.get('transformation_type', '').strip()
         intensity = data.get('intensity', 0.5)
         
@@ -235,8 +342,10 @@ def transform_voice():
             return jsonify({'error': f'Voice ID "{voice_id}" not found'}), 404
         
         # Generate unique output filename
-        output_filename = f"transform_{voice_id}_{transformation_type}_{uuid.uuid4().hex[:8]}.wav"
-        output_path = os.path.join(OUTPUT_FOLDER, output_filename)
+        user_out_dir = os.path.join(OUTPUT_FOLDER, user_id)
+        os.makedirs(user_out_dir, exist_ok=True)
+        output_filename = f"transform_{transformation_type}_{uuid.uuid4().hex[:8]}.wav"
+        output_path = os.path.join(user_out_dir, output_filename)
         
         # Transform voice
         result_path = voice_cloner.transform_voice(
@@ -246,7 +355,7 @@ def transform_voice():
         if os.path.exists(result_path):
             return jsonify({
                 'success': True,
-                'audio_url': f'/api/audio/{output_filename}',
+                'audio_url': f'/api/audio/{user_id}/{output_filename}',
                 'message': f'Voice transformation completed successfully: {transformation_type}'
             })
         else:
@@ -263,6 +372,12 @@ def assess_quality(voice_id):
         return jsonify({'error': 'Voice cloner not initialized'}), 500
     
     try:
+        # Optional user scoping: only allow if matches user's voice
+        user_id = get_request_user_id()
+        if user_id:
+            expected_voice = get_user_voice_id(user_id)
+            if voice_id != expected_voice:
+                return jsonify({'error': 'Forbidden for this user_id'}), 403
         # Check if voice exists
         if voice_id not in voice_cloner.get_available_voices():
             return jsonify({'error': f'Voice ID "{voice_id}" not found'}), 404
@@ -349,9 +464,13 @@ def remove_voice():
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
         
-        voice_id = data.get('voice_id', '').strip()
-        if not voice_id:
-            return jsonify({'error': 'Voice ID is required'}), 400
+        user_id = data.get('user_id', '').strip()
+        if not user_id:
+            return jsonify({'error': 'Missing user_id'}), 400
+        if USERS and user_id not in USERS:
+            return jsonify({'error': 'Invalid user_id'}), 403
+
+        voice_id = get_user_voice_id(user_id)
         
         voice_cloner.remove_voice(voice_id)
         
@@ -420,6 +539,9 @@ def internal_error(error):
 if __name__ == '__main__':
     print("🎵 Starting Voice Cloning Web Interface...")
     
+    # Load users
+    load_users()
+
     # Initialize voice cloner
     if init_voice_cloner():
         print("✅ Voice cloner initialized successfully")
