@@ -3,6 +3,7 @@ import json
 import torch
 import numpy as np
 import soundfile as sf
+import datetime
 from pathlib import Path
 from typing import List, Dict, Optional
 from TTS.api import TTS
@@ -347,11 +348,41 @@ class VoiceCloner:
         if not audio_path.lower().endswith(('.wav', '.mp3', '.flac')):
             raise ValueError("Audio file must be .wav, .mp3, or .flac")
         
-        self.voice_samples[voice_id] = {
+        # Lấy tên file từ audio_path để tạo voice_id mô tả hơn
+        filename = os.path.basename(audio_path)
+        filename_without_ext = os.path.splitext(filename)[0]
+        
+        # Tạo voice_id mới dựa trên user_id (voice_id parameter) thay vì filename
+        # voice_id parameter có dạng "voice_{user_id}" từ app.py
+        if voice_id.startswith("voice_"):
+            # Nếu voice_id đã có prefix "voice_", sử dụng trực tiếp
+            base_voice_id = voice_id
+        else:
+            # Nếu không có prefix, thêm vào
+            base_voice_id = f"voice_{voice_id}"
+        
+        # Tạo unique voice_id nếu đã tồn tại
+        new_voice_id = base_voice_id
+        counter = 1
+        while new_voice_id in self.voice_samples:
+            new_voice_id = f"{base_voice_id}_{counter:03d}"
+            counter += 1
+        
+        self.voice_samples[new_voice_id] = {
             'audio_path': audio_path,
-            'text': text
+            'text': text,
+            'original_id': voice_id,  # Lưu ID gốc từ request
+            'filename': filename,      # Lưu tên file thực tế
+            'upload_time': str(datetime.datetime.now())
         }
-        print(f"✅ Added voice sample: {voice_id} -> {audio_path}")
+        
+        print(f"✅ Added voice sample: {new_voice_id} -> {audio_path}")
+        print(f"📁 File: {filename}")
+        if new_voice_id != base_voice_id:
+            print(f"📝 Note: Voice ID changed from '{base_voice_id}' to '{new_voice_id}' (duplicate detected)")
+        print(f"📝 Original requested ID: {voice_id} -> Generated ID: {new_voice_id}")
+        
+        return new_voice_id  # Trả về voice_id thực tế
     
     def auto_detect_language(self, text: str) -> str:
         """
@@ -458,8 +489,6 @@ class VoiceCloner:
                 # Reduce quality slightly for speed
                 inference_settings.update({
                     'speed': 1.2,  # Slightly faster
-                    'enable_text_normalization': False,  # Skip text normalization
-                    'enable_phonemizer': False,  # Skip phonemization
                 })
             
             # Tạo audio với voice cloning và performance optimizations
@@ -871,6 +900,34 @@ class VoiceCloner:
         """Lấy danh sách voice đã đăng ký"""
         return list(self.voice_samples.keys())
     
+    def get_voices_by_user(self, user_id: str) -> List[str]:
+        """Lấy danh sách voice của một user cụ thể"""
+        user_voices = []
+        print(f"🔍 get_voices_by_user called for user_id: {user_id}")
+        print(f"🔍 Total voice samples: {len(self.voice_samples)}")
+        print(f"🔍 Looking for voices that start with 'voice_{user_id}' or have original_id starting with 'voice_{user_id}'")
+        
+        for voice_id, voice_info in self.voice_samples.items():
+            # Kiểm tra nếu voice_id bắt đầu với user_id hoặc có original_id trùng khớp
+            starts_with_user = voice_id.startswith(f"voice_{user_id}")
+            original_starts_with_user = voice_info.get('original_id', '').startswith(f"voice_{user_id}")
+            
+            print(f"  - Checking {voice_id}:")
+            print(f"    voice_id starts with 'voice_{user_id}': {starts_with_user}")
+            print(f"    original_id starts with 'voice_{user_id}': {original_starts_with_user}")
+            print(f"    original_id value: {voice_info.get('original_id', 'N/A')}")
+            print(f"    filename: {voice_info.get('filename', 'N/A')}")
+            
+            if starts_with_user or original_starts_with_user:
+                user_voices.append(voice_id)
+                print(f"    ✅ Added to user voices")
+            else:
+                print(f"    ❌ Not added to user voices")
+                print(f"    💡 Reason: voice_id='{voice_id}' doesn't start with 'voice_{user_id}' and original_id='{voice_info.get('original_id', 'N/A')}' doesn't start with 'voice_{user_id}'")
+        
+        print(f"🔍 Final result: {len(user_voices)} voices for user {user_id}: {user_voices}")
+        return user_voices
+    
     def remove_voice(self, voice_id: str):
         """Xóa voice sample"""
         if voice_id in self.voice_samples:
@@ -878,6 +935,24 @@ class VoiceCloner:
             print(f"✅ Removed voice: {voice_id}")
         else:
             print(f"⚠️ Voice ID '{voice_id}' not found")
+    
+    def remove_user_voices(self, user_id: str) -> int:
+        """Xóa tất cả voice của một user"""
+        removed_count = 0
+        voices_to_remove = []
+        
+        for voice_id, voice_info in self.voice_samples.items():
+            if (voice_id.startswith(f"voice_{user_id}") or 
+                voice_info.get('original_id', '').startswith(f"voice_{user_id}")):
+                voices_to_remove.append(voice_id)
+        
+        for voice_id in voices_to_remove:
+            del self.voice_samples[voice_id]
+            removed_count += 1
+            print(f"✅ Removed user voice: {voice_id}")
+        
+        print(f"🗑️ Removed {removed_count} voices for user {user_id}")
+        return removed_count
     
     def batch_clone(self, texts: List[str], voice_id: str, output_dir: str = "output") -> List[str]:
         """
@@ -996,10 +1071,18 @@ class VoiceCloner:
                     'duration': audio_info.duration,
                     'sample_rate': audio_info.samplerate,
                     'channels': audio_info.channels,
-                    'file_size': os.path.getsize(audio_path)
+                    'file_size': os.path.getsize(audio_path),
+                    'filename': os.path.basename(audio_path)  # Thêm tên file
                 })
             except Exception:
-                pass
+                # Nếu không đọc được audio info, vẫn thêm filename
+                voice_info['filename'] = os.path.basename(audio_path)
+        else:
+            # Nếu file không tồn tại, vẫn thêm filename từ metadata
+            if 'filename' in voice_info:
+                pass  # Giữ nguyên filename đã có
+            else:
+                voice_info['filename'] = os.path.basename(audio_path)
         
         return voice_info
     
@@ -1015,6 +1098,392 @@ class VoiceCloner:
             json.dump(config, f, ensure_ascii=False, indent=2)
         
         print(f"✅ Voice configuration exported to: {output_path}")
+    
+    def clone_voice_with_srt(self, text: str, voice_id: str, output_path: str = None, 
+                             language: str = None, srt_path: str = None, 
+                             segment_duration: float = 3.0) -> tuple:
+        """
+        Clone voice và tạo audio + file SRT phụ đề
+        
+        Args:
+            text: Text cần chuyển thành giọng nói
+            voice_id: ID của voice đã đăng ký
+            output_path: Đường dẫn output audio (optional)
+            language: Ngôn ngữ (optional)
+            srt_path: Đường dẫn file SRT (optional)
+            segment_duration: Thời gian mỗi segment phụ đề (giây)
+            
+        Returns:
+            Tuple (audio_path, srt_path)
+        """
+        if voice_id not in self.voice_samples:
+            raise ValueError(f"Voice ID '{voice_id}' not found. Please add voice sample first.")
+        
+        # Tạo audio trước
+        audio_path = self.clone_voice(text, voice_id, output_path, language)
+        
+        # Tạo file SRT
+        if not srt_path:
+            srt_path = audio_path.replace('.wav', '.srt')
+        
+        # Tách text thành các segment
+        segments = self._split_text_for_subtitles(text, segment_duration)
+        
+        # Tạo file SRT
+        self._create_srt_file(segments, srt_path, segment_duration)
+        
+        print(f"✅ Voice cloned with SRT: {audio_path}")
+        print(f"📝 SRT file created: {srt_path}")
+        print(f"🔤 {len(segments)} subtitle segments created")
+        
+        return audio_path, srt_path
+    
+    def _split_text_for_subtitles(self, text: str, segment_duration: float) -> list:
+        """
+        Tách text thành các segment phù hợp cho phụ đề
+        
+        Args:
+            text: Text cần tách
+            segment_duration: Thời gian mỗi segment (giây)
+            
+        Returns:
+            List các segment text
+        """
+        # Ước tính số từ mỗi segment (dựa trên tốc độ đọc trung bình)
+        words_per_second = 2.5  # Tốc độ đọc trung bình
+        words_per_segment = int(segment_duration * words_per_second)
+        
+        # Tách text thành các từ
+        words = text.split()
+        segments = []
+        
+        if len(words) <= words_per_segment:
+            # Text ngắn, chỉ cần 1 segment
+            segments.append(text)
+        else:
+            # Tách thành nhiều segment
+            current_segment = []
+            current_word_count = 0
+            
+            for word in words:
+                current_segment.append(word)
+                current_word_count += 1
+                
+                # Kiểm tra nếu đã đủ từ cho segment
+                if current_word_count >= words_per_segment:
+                    segments.append(' '.join(current_segment))
+                    current_segment = []
+                    current_word_count = 0
+            
+            # Thêm segment cuối cùng nếu còn
+            if current_segment:
+                segments.append(' '.join(current_segment))
+        
+        return segments
+    
+    def _create_srt_file(self, segments: list, srt_path: str, segment_duration: float):
+        """
+        Tạo file SRT từ các segment
+        
+        Args:
+            segments: List các segment text
+            srt_path: Đường dẫn file SRT
+            segment_duration: Thời gian mỗi segment (giây)
+        """
+        with open(srt_path, 'w', encoding='utf-8') as f:
+            for i, segment in enumerate(segments, 1):
+                # Tính thời gian bắt đầu và kết thúc
+                start_time = (i - 1) * segment_duration
+                end_time = i * segment_duration
+                
+                # Format thời gian theo chuẩn SRT (HH:MM:SS,mmm)
+                start_time_str = self._format_srt_time(start_time)
+                end_time_str = self._format_srt_time(end_time)
+                
+                # Ghi segment vào file SRT
+                f.write(f"{i}\n")
+                f.write(f"{start_time_str} --> {end_time_str}\n")
+                f.write(f"{segment}\n\n")
+    
+    def _format_srt_time(self, seconds: float) -> str:
+        """
+        Format thời gian theo chuẩn SRT (HH:MM:SS,mmm)
+        
+        Args:
+            seconds: Thời gian tính bằng giây
+            
+        Returns:
+            String thời gian theo format SRT
+        """
+        hours = int(seconds // 3600)
+        minutes = int((seconds % 3600) // 60)
+        secs = int(seconds % 60)
+        milliseconds = int((seconds % 1) * 1000)
+        
+        return f"{hours:02d}:{minutes:02d}:{secs:02d},{milliseconds:03d}"
+    
+    def batch_clone_with_srt(self, texts: list, voice_id: str, output_folder: str = "batch_output", 
+                             language: str = None, segment_duration: float = 3.0) -> dict:
+        """
+        Clone voice cho nhiều text cùng lúc với SRT
+        
+        Args:
+            texts: List các text cần clone
+            voice_id: ID của voice đã đăng ký
+            output_folder: Thư mục output
+            language: Ngôn ngữ (optional)
+            segment_duration: Thời gian mỗi segment SRT (giây)
+            
+        Returns:
+            Dict chứa kết quả của từng text
+        """
+        if voice_id not in self.voice_samples:
+            raise ValueError(f"Voice ID '{voice_id}' not found. Please add voice sample first.")
+        
+        # Tạo thư mục output nếu chưa có
+        os.makedirs(output_folder, exist_ok=True)
+        
+        results = {
+            'success_count': 0,
+            'failed_count': 0,
+            'outputs': [],
+            'errors': []
+        }
+        
+        print(f"🚀 Starting batch processing with SRT for {len(texts)} texts...")
+        
+        for i, text in enumerate(texts, 1):
+            try:
+                print(f"\n📝 Processing text {i}/{len(texts)}: {text[:50]}...")
+                
+                # Tạo tên file output
+                base_filename = f"batch_{voice_id}_{i:03d}_{hash(text) % 10000}"
+                audio_path = os.path.join(output_folder, f"{base_filename}.wav")
+                srt_path = os.path.join(output_folder, f"{base_filename}.srt")
+                
+                # Clone voice với SRT
+                result_audio, result_srt = self.clone_voice_with_srt(
+                    text, voice_id, audio_path, language, srt_path, segment_duration
+                )
+                
+                results['outputs'].append({
+                    'text': text,
+                    'audio_path': result_audio,
+                    'srt_path': result_srt,
+                    'filename': base_filename,
+                    'index': i
+                })
+                results['success_count'] += 1
+                
+                print(f"✅ Text {i} processed successfully: {base_filename}")
+                
+            except Exception as e:
+                error_msg = f"Failed to process text {i}: {str(e)}"
+                print(f"❌ {error_msg}")
+                results['errors'].append({
+                    'text': text,
+                    'error': str(e),
+                    'index': i
+                })
+                results['failed_count'] += 1
+        
+        print(f"\n🎉 Batch processing with SRT completed!")
+        print(f"✅ Success: {results['success_count']}")
+        print(f"❌ Failed: {results['failed_count']}")
+        print(f"📁 Output folder: {output_folder}")
+        print(f"📝 SRT files created for each audio file")
+        
+        return results
+    
+    def create_srt_from_audio(self, audio_path: str, text: str, srt_path: str = None, 
+                              segment_duration: float = 3.0) -> str:
+        """
+        Tạo file SRT từ audio file có sẵn
+        
+        Args:
+            audio_path: Đường dẫn file audio
+            text: Text tương ứng với audio
+            srt_path: Đường dẫn file SRT (optional)
+            segment_duration: Thời gian mỗi segment (giây)
+            
+        Returns:
+            Đường dẫn file SRT đã tạo
+        """
+        if not os.path.exists(audio_path):
+            raise FileNotFoundError(f"Audio file not found: {audio_path}")
+        
+        # Tạo tên file SRT nếu không có
+        if not srt_path:
+            srt_path = audio_path.replace('.wav', '.srt').replace('.mp3', '.srt').replace('.flac', '.srt')
+        
+        # Tách text thành các segment
+        segments = self._split_text_for_subtitles(text, segment_duration)
+        
+        # Tạo file SRT
+        self._create_srt_file(segments, srt_path, segment_duration)
+        
+        print(f"✅ SRT file created: {srt_path}")
+        print(f"🔤 {len(segments)} subtitle segments created")
+        
+        return srt_path
+    
+    def merge_srt_files(self, srt_files: list, output_path: str, 
+                        segment_duration: float = 3.0) -> str:
+        """
+        Gộp nhiều file SRT thành một file duy nhất
+        
+        Args:
+            srt_files: List đường dẫn các file SRT
+            output_path: Đường dẫn file SRT output
+            segment_duration: Thời gian mỗi segment (giây)
+            
+        Returns:
+            Đường dẫn file SRT đã gộp
+        """
+        all_segments = []
+        current_time = 0.0
+        
+        for srt_file in srt_files:
+            if not os.path.exists(srt_file):
+                print(f"⚠️ Warning: SRT file not found: {srt_file}")
+                continue
+            
+            # Đọc file SRT
+            with open(srt_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Parse SRT content
+            segments = self._parse_srt_content(content)
+            
+            # Thêm vào danh sách với thời gian mới
+            for segment in segments:
+                segment['start_time'] += current_time
+                segment['end_time'] += current_time
+                all_segments.append(segment)
+            
+            # Cập nhật thời gian cho file tiếp theo
+            if segments:
+                current_time = all_segments[-1]['end_time'] + 1.0  # Thêm 1 giây khoảng cách
+        
+        # Sắp xếp theo thời gian
+        all_segments.sort(key=lambda x: x['start_time'])
+        
+        # Tạo file SRT gộp
+        with open(output_path, 'w', encoding='utf-8') as f:
+            for i, segment in enumerate(all_segments, 1):
+                start_time_str = self._format_srt_time(segment['start_time'])
+                end_time_str = self._format_srt_time(segment['end_time'])
+                
+                f.write(f"{i}\n")
+                f.write(f"{start_time_str} --> {end_time_str}\n")
+                f.write(f"{segment['text']}\n\n")
+        
+        print(f"✅ Merged SRT file created: {output_path}")
+        print(f"🔤 Total segments: {len(all_segments)}")
+        
+        return output_path
+    
+    def _parse_srt_content(self, content: str) -> list:
+        """
+        Parse nội dung file SRT
+        
+        Args:
+            content: Nội dung file SRT
+            
+        Returns:
+            List các segment với thông tin thời gian
+        """
+        segments = []
+        lines = content.strip().split('\n')
+        
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            
+            if not line or not line.isdigit():
+                i += 1
+                continue
+            
+            # Đọc số thứ tự
+            segment_number = int(line)
+            i += 1
+            
+            if i >= len(lines):
+                break
+            
+            # Đọc thời gian
+            time_line = lines[i].strip()
+            i += 1
+            
+            if i >= len(lines):
+                break
+            
+            # Parse thời gian
+            try:
+                start_time, end_time = self._parse_srt_time_line(time_line)
+            except:
+                continue
+            
+            # Đọc text
+            text_lines = []
+            while i < len(lines) and lines[i].strip():
+                text_lines.append(lines[i].strip())
+                i += 1
+            
+            if text_lines:
+                segments.append({
+                    'number': segment_number,
+                    'start_time': start_time,
+                    'end_time': end_time,
+                    'text': ' '.join(text_lines)
+                })
+            
+            i += 1
+        
+        return segments
+    
+    def _parse_srt_time_line(self, time_line: str) -> tuple:
+        """
+        Parse dòng thời gian SRT (HH:MM:SS,mmm --> HH:MM:SS,mmm)
+        
+        Args:
+            time_line: Dòng thời gian SRT
+            
+        Returns:
+            Tuple (start_time, end_time) tính bằng giây
+        """
+        parts = time_line.split(' --> ')
+        if len(parts) != 2:
+            raise ValueError("Invalid SRT time format")
+        
+        start_time = self._parse_srt_time_to_seconds(parts[0].strip())
+        end_time = self._parse_srt_time_to_seconds(parts[1].strip())
+        
+        return start_time, end_time
+    
+    def _parse_srt_time_to_seconds(self, time_str: str) -> float:
+        """
+        Chuyển đổi thời gian SRT thành giây
+        
+        Args:
+            time_str: String thời gian SRT (HH:MM:SS,mmm)
+            
+        Returns:
+            Thời gian tính bằng giây
+        """
+        # Thay dấu phẩy bằng dấu chấm
+        time_str = time_str.replace(',', '.')
+        
+        # Tách thành giờ, phút, giây
+        parts = time_str.split(':')
+        if len(parts) != 3:
+            raise ValueError("Invalid time format")
+        
+        hours = int(parts[0])
+        minutes = int(parts[1])
+        seconds = float(parts[2])
+        
+        return hours * 3600 + minutes * 60 + seconds
     
     def import_voice_config(self, config_path: str):
         """Import cấu hình voice samples"""

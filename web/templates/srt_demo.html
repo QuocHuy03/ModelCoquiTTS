@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRT Demo - Voice Cloning with Subtitles</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .input-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        .file-info {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .srt-preview {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 SRT Demo - Voice Cloning with Subtitles</h1>
+        <p>Test chức năng tạo file SRT (phụ đề) khi clone voice</p>
+    </div>
+
+    <!-- Voice Cloning with SRT -->
+    <div class="container">
+        <h2>🎤 Voice Cloning với SRT</h2>
+        <div class="section">
+            <div class="input-group">
+                <label for="user_id">User ID:</label>
+                <input type="text" id="user_id" placeholder="Nhập user ID (ví dụ: 093837383)" value="093837383">
+            </div>
+            
+            <div class="input-group">
+                <label for="text_input">Text cần clone:</label>
+                <textarea id="text_input" placeholder="Nhập text cần chuyển thành giọng nói...">Xin chào! Đây là demo chức năng tạo phụ đề SRT khi clone voice. Hệ thống sẽ tự động tách text thành các segment phù hợp và tạo file phụ đề tương ứng.</textarea>
+            </div>
+            
+            <div class="input-group">
+                <label for="segment_duration">Thời gian mỗi segment (giây):</label>
+                <input type="number" id="segment_duration" value="3.0" min="1" max="10" step="0.5">
+            </div>
+            
+            <div class="input-group">
+                <label for="language">Ngôn ngữ:</label>
+                <select id="language">
+                    <option value="">Tự động detect</option>
+                    <option value="en">English</option>
+                    <option value="vi">Vietnamese</option>
+                    <option value="ja">Japanese</option>
+                    <option value="ko">Korean</option>
+                    <option value="zh-cn">Chinese</option>
+                </select>
+            </div>
+            
+            <button class="button" onclick="cloneVoiceWithSRT()">🎬 Clone Voice + Tạo SRT</button>
+        </div>
+        
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Đang xử lý... Vui lòng chờ</p>
+        </div>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <!-- Create SRT from Audio -->
+    <div class="container">
+        <h2>📝 Tạo SRT từ Audio có sẵn</h2>
+        <div class="section">
+            <div class="input-group">
+                <label for="audio_path">Đường dẫn file audio:</label>
+                <input type="text" id="audio_path" placeholder="Nhập đường dẫn file audio (ví dụ: output/voice_093837383_123.wav)">
+            </div>
+            
+            <div class="input-group">
+                <label for="text_for_srt">Text tương ứng:</label>
+                <textarea id="text_for_srt" placeholder="Nhập text tương ứng với file audio...">Đây là text tương ứng với file audio. Hệ thống sẽ tạo file SRT với timing phù hợp.</textarea>
+            </div>
+            
+            <div class="input-group">
+                <label for="srt_segment_duration">Thời gian mỗi segment (giây):</label>
+                <input type="number" id="srt_segment_duration" value="3.0" min="1" max="10" step="0.5">
+            </div>
+            
+            <button class="button" onclick="createSRTFromAudio()">📝 Tạo SRT</button>
+        </div>
+        
+        <div id="srt_result" class="result" style="display: none;"></div>
+    </div>
+
+    <!-- Merge SRT Files -->
+    <div class="container">
+        <h2>🔗 Gộp nhiều file SRT</h2>
+        <div class="section">
+            <div class="input-group">
+                <label for="srt_files">Danh sách file SRT (mỗi file một dòng):</label>
+                <textarea id="srt_files" placeholder="Nhập đường dẫn các file SRT, mỗi file một dòng&#10;output/file1.srt&#10;output/file2.srt&#10;output/file3.srt"></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label for="merged_srt_path">Đường dẫn file SRT gộp:</label>
+                <input type="text" id="merged_srt_path" placeholder="output/merged_subtitles.srt" value="output/merged_subtitles.srt">
+            </div>
+            
+            <button class="button" onclick="mergeSRTFiles()">🔗 Gộp SRT Files</button>
+        </div>
+        
+        <div id="merge_result" class="result" style="display: none;"></div>
+    </div>
+
+    <!-- SRT Preview -->
+    <div class="container">
+        <h2>👀 Xem trước file SRT</h2>
+        <div class="section">
+            <div class="input-group">
+                <label for="srt_preview_path">Đường dẫn file SRT:</label>
+                <input type="text" id="srt_preview_path" placeholder="Nhập đường dẫn file SRT để xem trước">
+            </div>
+            
+            <button class="button" onclick="previewSRT()">👀 Xem trước</button>
+        </div>
+        
+        <div id="srt_preview" class="srt-preview" style="display: none;"></div>
+    </div>
+
+    <script>
+        async function cloneVoiceWithSRT() {
+            const user_id = document.getElementById('user_id').value.trim();
+            const text = document.getElementById('text_input').value.trim();
+            const segment_duration = parseFloat(document.getElementById('segment_duration').value);
+            const language = document.getElementById('language').value;
+            
+            if (!user_id || !text) {
+                alert('Vui lòng nhập User ID và Text');
+                return;
+            }
+            
+            // Hiển thị loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/synthesize_with_srt', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_id: user_id,
+                        text: text,
+                        segment_duration: segment_duration,
+                        language: language || null
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult('result', {
+                        title: '✅ Thành công!',
+                        content: `
+                            <p><strong>Audio:</strong> ${result.audio_path}</p>
+                            <p><strong>SRT:</strong> ${result.srt_path}</p>
+                            <p><strong>Voice ID:</strong> ${result.voice_id}</p>
+                            <p><strong>Segment duration:</strong> ${result.segment_duration}s</p>
+                            <button class="button" onclick="previewSRTFile('${result.srt_path}')">👀 Xem SRT</button>
+                        `,
+                        type: 'success'
+                    });
+                } else {
+                    showResult('result', {
+                        title: '❌ Lỗi',
+                        content: `<p>${result.error}</p>`,
+                        type: 'error'
+                    });
+                }
+            } catch (error) {
+                showResult('result', {
+                    title: '❌ Lỗi kết nối',
+                    content: `<p>${error.message}</p>`,
+                    type: 'error'
+                });
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+        
+        async function createSRTFromAudio() {
+            const audio_path = document.getElementById('audio_path').value.trim();
+            const text = document.getElementById('text_for_srt').value.trim();
+            const segment_duration = parseFloat(document.getElementById('srt_segment_duration').value);
+            
+            if (!audio_path || !text) {
+                alert('Vui lòng nhập đường dẫn audio và text');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/create_srt', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        audio_path: audio_path,
+                        text: text,
+                        segment_duration: segment_duration
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult('srt_result', {
+                        title: '✅ Thành công!',
+                        content: `
+                            <p><strong>SRT file:</strong> ${result.srt_path}</p>
+                            <p><strong>Audio file:</strong> ${result.audio_path}</p>
+                            <p><strong>Segment duration:</strong> ${result.segment_duration}s</p>
+                            <button class="button" onclick="previewSRTFile('${result.srt_path}')">👀 Xem SRT</button>
+                        `,
+                        type: 'success'
+                    });
+                } else {
+                    showResult('srt_result', {
+                        title: '❌ Lỗi',
+                        content: `<p>${result.error}</p>`,
+                        type: 'error'
+                    });
+                }
+            } catch (error) {
+                showResult('srt_result', {
+                    title: '❌ Lỗi kết nối',
+                    content: `<p>${error.message}</p>`,
+                    type: 'error'
+                });
+            }
+        }
+        
+        async function mergeSRTFiles() {
+            const srt_files_text = document.getElementById('srt_files').value.trim();
+            const output_path = document.getElementById('merged_srt_path').value.trim();
+            
+            if (!srt_files_text || !output_path) {
+                alert('Vui lòng nhập danh sách file SRT và đường dẫn output');
+                return;
+            }
+            
+            const srt_files = srt_files_text.split('\n').filter(line => line.trim());
+            
+            if (srt_files.length < 2) {
+                alert('Cần ít nhất 2 file SRT để gộp');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/merge_srt', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        srt_files: srt_files,
+                        output_path: output_path
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult('merge_result', {
+                        title: '✅ Thành công!',
+                        content: `
+                            <p><strong>File gộp:</strong> ${result.output_path}</p>
+                            <p><strong>Số file input:</strong> ${result.input_files.length}</p>
+                            <button class="button" onclick="previewSRTFile('${result.output_path}')">👀 Xem SRT gộp</button>
+                        `,
+                        type: 'success'
+                    });
+                } else {
+                    showResult('merge_result', {
+                        title: '❌ Lỗi',
+                        content: `<p>${result.error}</p>`,
+                        type: 'error'
+                    });
+                }
+            } catch (error) {
+                showResult('merge_result', {
+                    title: '❌ Lỗi kết nối',
+                    content: `<p>${error.message}</p>`,
+                    type: 'error'
+                });
+            }
+        }
+        
+        async function previewSRT() {
+            const srt_path = document.getElementById('srt_preview_path').value.trim();
+            
+            if (!srt_path) {
+                alert('Vui lòng nhập đường dẫn file SRT');
+                return;
+            }
+            
+            await previewSRTFile(srt_path);
+        }
+        
+        async function previewSRTFile(srt_path) {
+            try {
+                const response = await fetch(`/api/files/${encodeURIComponent(srt_path)}`);
+                
+                if (response.ok) {
+                    const content = await response.text();
+                    document.getElementById('srt_preview').innerHTML = content;
+                    document.getElementById('srt_preview').style.display = 'block';
+                } else {
+                    alert('Không thể đọc file SRT');
+                }
+            } catch (error) {
+                alert('Lỗi khi đọc file SRT: ' + error.message);
+            }
+        }
+        
+        function showResult(elementId, data) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `
+                <h3>${data.title}</h3>
+                <div>${data.content}</div>
+            `;
+            element.className = `result ${data.type}`;
+            element.style.display = 'block';
+        }
+        
+        // Auto-fill demo data
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set demo audio path if available
+            const demoAudioPath = 'output/voice_093837383_demo.wav';
+            document.getElementById('audio_path').value = demoAudioPath;
+            
+            // Set demo SRT files
+            document.getElementById('srt_files').value = `output/voice_093837383_001.srt
+output/voice_093837383_002.srt
+output/voice_093837383_003.srt`;
+        });
+    </script>
+</body>
+</html> 

@@ -203,6 +203,7 @@
             <div class="header">
                 <h1><i class="fas fa-microphone-alt"></i> Voice Cloning</h1>
                 <p>Trải nghiệm công nghệ AI tiên tiến - Clone giọng nói chân thực và tự nhiên</p>
+                <p class="text-info"><i class="fas fa-closed-captioning"></i> <strong>Tính năng mới:</strong> Tự động tạo file phụ đề SRT khi clone voice!</p>
             </div>
 
             <!-- Stats Grid -->
@@ -295,6 +296,15 @@
                                     <label for="clone-text" class="form-label">Text cần clone</label>
                                     <textarea class="form-control" id="clone-text" rows="3" placeholder="Nhập text cần chuyển thành giọng nói..." required></textarea>
                                     <div class="form-text">Tối đa 500 ký tự. Hỗ trợ đa ngôn ngữ!</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="segment-duration" class="form-label">Độ dài phụ đề (giây)</label>
+                                    <input type="range" class="range-slider" id="segment-duration" min="1.0" max="10.0" step="0.5" value="3.0">
+                                    <div class="text-center">
+                                        <span class="value-display" id="segment-duration-value">3.0s</span>
+                                    </div>
+                                    <div class="form-text text-center">Điều chỉnh độ dài mỗi đoạn phụ đề SRT (1.0s - 10.0s)</div>
                                 </div>
                                 
                                 <!-- Audio Effects Section -->
@@ -523,6 +533,22 @@
                     <div id="output-audio">
                         <!-- Audio player sẽ được thêm vào đây -->
                     </div>
+                    <div id="output-srt" style="display: none;">
+                        <hr>
+                        <h6><i class="fas fa-closed-captioning"></i> Phụ đề SRT</h6>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge bg-success">SRT đã tạo</span>
+                            <span id="srt-filename" class="text-muted"></span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a id="srt-download" href="#" class="btn btn-outline-primary btn-sm" download>
+                                <i class="fas fa-download"></i> Tải SRT
+                            </a>
+                            <button id="srt-preview" class="btn btn-outline-info btn-sm" onclick="previewSRT()">
+                                <i class="fas fa-eye"></i> Xem nội dung
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -581,6 +607,7 @@
             document.getElementById('reverb').addEventListener('input', updateReverbValue);
             document.getElementById('echo').addEventListener('input', updateEchoValue);
             document.getElementById('transformation-intensity').addEventListener('input', updateIntensityValue);
+            document.getElementById('segment-duration').addEventListener('input', updateSegmentDurationValue);
         });
         
         // Update speed value display
@@ -611,6 +638,12 @@
         function updateIntensityValue() {
             const intensity = document.getElementById('transformation-intensity').value;
             document.getElementById('intensity-value').textContent = intensity;
+        }
+        
+        // Update segment duration value display
+        function updateSegmentDurationValue() {
+            const duration = document.getElementById('segment-duration').value;
+            document.getElementById('segment-duration-value').textContent = duration + 's';
         }
 
         // Health check
@@ -807,6 +840,7 @@
             const ageGroup = document.getElementById('age-group').value;
             const speed = parseFloat(document.getElementById('speed').value);
             const pitch = parseInt(document.getElementById('pitch').value);
+            const segmentDuration = parseFloat(document.getElementById('segment-duration').value);
             
             if (!currentUserId) {
                 showAlert('Vui lòng nhập User ID trước khi clone', 'warning');
@@ -829,7 +863,8 @@
                     voice_type: voiceType,
                     age_group: ageGroup,
                     speed: speed,
-                    pitch_shift: pitch
+                    pitch_shift: pitch,
+                    segment_duration: segmentDuration
                 };
                 
                 const response = await fetch('/api/synthesize', {
@@ -846,6 +881,17 @@
                     showAlert(data.message, 'success');
                     playAudio(data.audio_url);
                     document.getElementById('output-card').style.display = 'block';
+                    
+                    // Hiển thị thông tin SRT nếu có
+                    if (data.srt_url) {
+                        document.getElementById('output-srt').style.display = 'block';
+                        document.getElementById('srt-filename').textContent = data.srt_filename;
+                        document.getElementById('srt-download').href = data.srt_url;
+                        document.getElementById('srt-download').download = data.srt_filename;
+                    } else {
+                        document.getElementById('output-srt').style.display = 'none';
+                    }
+                    
                     document.getElementById('output-card').scrollIntoView({ behavior: 'smooth' });
                 } else {
                     showAlert(data.error || 'Clone voice thất bại', 'danger');
@@ -1082,6 +1128,63 @@
                 const el = document.getElementById(id);
                 if (el) el.remove();
             }, 5000);
+        }
+
+        // Preview SRT content
+        async function previewSRT() {
+            const srtDownload = document.getElementById('srt-download');
+            const srtUrl = srtDownload.href;
+            
+            if (!srtUrl || srtUrl === '#') {
+                showAlert('Không có file SRT để xem', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch(srtUrl);
+                const srtContent = await response.text();
+                
+                // Tạo modal để hiển thị nội dung SRT
+                const modal = document.createElement('div');
+                modal.className = 'modal fade';
+                modal.id = 'srt-preview-modal';
+                modal.innerHTML = `
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-closed-captioning"></i> Nội dung file SRT
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <pre class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;">${srtContent}</pre>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                <a href="${srtUrl}" class="btn btn-primary" download>
+                                    <i class="fas fa-download"></i> Tải xuống
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Hiển thị modal
+                const bootstrapModal = new bootstrap.Modal(modal);
+                bootstrapModal.show();
+                
+                // Xóa modal khi đóng
+                modal.addEventListener('hidden.bs.modal', function() {
+                    document.body.removeChild(modal);
+                });
+                
+            } catch (error) {
+                console.error('Failed to preview SRT:', error);
+                showAlert('Không thể xem nội dung file SRT', 'danger');
+            }
         }
 
         // Auto-refresh every 30 seconds
